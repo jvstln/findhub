@@ -94,6 +94,19 @@
         "typescript": "^5",
       },
     },
+    "packages/shared": {
+      "name": "@findhub/shared",
+      "dependencies": {
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@findhub/db": "workspace:*",
+        "tsdown": "catalog:",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
   },
   "catalog": {
     "better-auth": "^1.3.28",
@@ -208,6 +221,8 @@
     "@findhub/auth": ["@findhub/auth@workspace:packages/auth"],
 
     "@findhub/db": ["@findhub/db@workspace:packages/db"],
+
+    "@findhub/shared": ["@findhub/shared@workspace:packages/shared"],
 
     "@floating-ui/core": ["@floating-ui/core@1.7.3", "", { "dependencies": { "@floating-ui/utils": "^0.2.10" } }, "sha512-sGnvb5dmrJaKEZ+LDIpguvdX3bDlEllmv4/ClQ9awcmCZrlx5jQyyMWFM5kBI+EyNOCDDiKk8il0zeuX3Zlg/w=="],
 
