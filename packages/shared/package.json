@@ -12,6 +12,14 @@
 		"./schemas": {
 			"types": "./dist/schemas/item.schema.d.ts",
 			"default": "./src/schemas/item.schema.ts"
+		},
+		"./utils": {
+			"types": "./dist/utils/util.d.ts",
+			"default": "./src/utils/util.ts"
+		},
+		"./utils/*": {
+			"types": "./dist/utils/*.util.d.ts",
+			"default": "./src/utils/*.util.ts"
 		}
 	},
 	"type": "module",

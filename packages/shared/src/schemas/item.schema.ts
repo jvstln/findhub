@@ -8,40 +8,35 @@ export const itemStatusSchema = z.enum([
 	"archived",
 ]);
 
-export const itemCategorySchema = z.enum([
-	"electronics",
-	"clothing",
-	"accessories",
-	"books",
-	"keys",
-	"cards",
-	"bags",
-	"other",
-]);
-
 export const createItemSchema = z.object({
 	name: z.string().min(3, "Name must be at least 3 characters").max(255),
 	description: z
 		.string()
 		.min(10, "Description must be at least 10 characters")
 		.max(2000),
-	category: itemCategorySchema,
+	category: z.string().min(1, "Category is required"),
 	keywords: z.string().optional(),
 	location: z
 		.string()
 		.min(3, "Location must be at least 3 characters")
 		.max(255),
 	dateFound: z.coerce.date(),
-	image: z.instanceof(File).optional(),
-});
-
-export const updateItemSchema = createItemSchema.partial().extend({
+	image: z
+		.file()
+		.max(5 * 1024 * 1024, "Image must be less than 5MB")
+		.mime(
+			["image/jpeg", "image/png", "image/webp"],
+			"Image must be JPEG, PNG, or WebP format",
+		)
+		.optional(),
 	status: itemStatusSchema.optional(),
 });
 
+export const updateItemSchema = createItemSchema.partial();
+
 export const searchFiltersSchema = z.object({
 	keyword: z.string().optional(),
-	category: itemCategorySchema.optional(),
+	category: z.string().optional(),
 	location: z.string().optional(),
 	status: itemStatusSchema.optional(),
 	dateFrom: z.coerce.date().optional(),
@@ -52,7 +47,10 @@ export const searchFiltersSchema = z.object({
 
 export const statusUpdateSchema = z.object({
 	status: itemStatusSchema,
-	notes: z.string().optional(),
+	notes: z
+		.string()
+		.max(500, "Notes must be less than 500 characters")
+		.optional(),
 });
 
 export const itemIdSchema = z.object({

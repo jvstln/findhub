@@ -22,7 +22,9 @@ export const lostItem = pgTable(
 		id: serial("id").primaryKey(),
 		name: varchar("name", { length: 255 }).notNull(),
 		description: text("description").notNull(),
-		category: varchar("category", { length: 100 }).notNull(),
+		category: varchar("category", { length: 100 }).references(
+			() => itemCategory.id,
+		),
 		keywords: text("keywords"),
 		location: varchar("location", { length: 255 }).notNull(),
 		dateFound: timestamp("date_found").notNull(),
@@ -35,13 +37,19 @@ export const lostItem = pgTable(
 		createdAt: timestamp("created_at").notNull().defaultNow(),
 		updatedAt: timestamp("updated_at").notNull().defaultNow(),
 	},
-	(table) => ({
-		statusIdx: index("lost_item_status_idx").on(table.status),
-		categoryIdx: index("lost_item_category_idx").on(table.category),
-		dateFoundIdx: index("lost_item_date_found_idx").on(table.dateFound),
-		createdAtIdx: index("lost_item_created_at_idx").on(table.createdAt),
-	}),
+	(table) => [
+		index("lost_item_status_idx").on(table.status),
+		index("lost_item_category_idx").on(table.category),
+		index("lost_item_date_found_idx").on(table.dateFound),
+		index("lost_item_created_at_idx").on(table.createdAt),
+	],
 );
+
+export const itemCategory = pgTable("item_category", {
+	id: serial("id").primaryKey(),
+	name: varchar("name", { length: 100 }).notNull(),
+	description: text("description"),
+});
 
 export const itemStatusHistory = pgTable("item_status_history", {
 	id: serial("id").primaryKey(),

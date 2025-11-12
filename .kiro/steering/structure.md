@@ -36,6 +36,8 @@ findhub/
 
 - Types: `*.type.ts` (e.g., `item.type.ts`)
 - Schemas: `*.schema.ts` (e.g., `item.schema.ts`)
+- Routes: `*.route.ts` (e.g., `item.route.ts`)
+- Utility functions: `*.util.ts` (e.g., `item.util.ts`)
 
 ### @findhub/db
 

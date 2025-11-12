@@ -30,7 +30,11 @@ const MIME_TO_EXT: Record<string, string> = {
  */
 export function validateFile(file: File): ValidationResult {
 	// Check file type
-	if (!ALLOWED_MIME_TYPES.includes(file.type as any)) {
+	if (
+		!ALLOWED_MIME_TYPES.includes(
+			file.type as (typeof ALLOWED_MIME_TYPES)[number],
+		)
+	) {
 		return {
 			valid: false,
 			error: "Invalid file type. Allowed types: JPEG, PNG, WebP",

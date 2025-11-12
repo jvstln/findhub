@@ -1,26 +1,15 @@
-// Shared TypeScript types for lost items feature
-// Note: LostItem, StatusHistoryEntry, and ItemStatus types are inferred from the database schema
-import type { ItemStatus } from "@findhub/db/types/item";
+import type z from "zod";
+import type {
+	createItemSchema,
+	searchFiltersSchema,
+	statusUpdateSchema,
+	updateItemSchema,
+} from "../schemas/item.schema";
 
 export type * from "@findhub/db/types/item";
 
-export type ItemCategory =
-	| "electronics"
-	| "clothing"
-	| "accessories"
-	| "books"
-	| "keys"
-	| "cards"
-	| "bags"
-	| "other";
+export type NewItem = z.infer<typeof createItemSchema>;
+export type ItemUpdate = z.infer<typeof updateItemSchema>;
 
-export interface SearchFilters {
-	keyword?: string;
-	category?: ItemCategory;
-	location?: string;
-	status?: ItemStatus;
-	dateFrom?: Date;
-	dateTo?: Date;
-	page?: number;
-	pageSize?: number;
-}
+export type SearchFilters = z.infer<typeof searchFiltersSchema>;
+export type StatusUpdate = z.infer<typeof statusUpdateSchema>;

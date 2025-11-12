@@ -27,17 +27,21 @@
 		"db:push": "turbo -F @findhub/db db:push",
 		"db:studio": "turbo -F @findhub/db db:studio",
 		"db:generate": "turbo -F @findhub/db db:generate",
-		"db:migrate": "turbo -F @findhub/db db:migrate"
+		"db:migrate": "turbo -F @findhub/db db:migrate",
+		"test:e2e": "playwright test",
+		"test:e2e:ui": "playwright test --ui",
+		"test:e2e:headed": "playwright test --headed"
 	},
 	"dependencies": {
 		"dotenv": "^17.2.2",
 		"zod": "^4.1.11"
 	},
 	"devDependencies": {
-		"turbo": "^2.5.4",
 		"@biomejs/biome": "^2.2.0",
+		"@playwright/test": "^1.56.1",
+		"@types/bun": "^1.2.6",
 		"tsdown": "^0.15.5",
-		"@types/bun": "^1.2.6"
+		"turbo": "^2.5.4"
 	},
 	"packageManager": "bun@1.2.19"
 }
