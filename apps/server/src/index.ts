@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { auth } from "@findhub/auth";
 import { Hono } from "hono";
+import { serveStatic } from "hono/bun";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 
@@ -16,6 +17,9 @@ app.use(
 		credentials: true,
 	}),
 );
+
+// Serve static files from public directory
+app.use("/uploads/*", serveStatic({ root: "./public" }));
 
 app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 

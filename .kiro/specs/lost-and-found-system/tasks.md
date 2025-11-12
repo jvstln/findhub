@@ -27,14 +27,16 @@
 
 ## Backend API Implementation
 
-- [ ] 4. Set up file upload infrastructure
+- [x] 4. Set up file upload infrastructure
 
   - Create `apps/server/public/uploads/items/` directory structure
   - Create `apps/server/src/lib/upload.ts` with file validation and storage utilities
   - Configure Hono to serve static files from public directory
   - _Requirements: 1.3, 1.6_
 
-- [ ] 5. Implement items service layer
+- [x] 5. Implement items service layer
+
+
 
   - Create `apps/server/src/services/items.service.ts` with business logic for CRUD operations
   - Implement search/filter logic with pagination

@@ -36,8 +36,9 @@ inclusion: always
 
 ## Shared Packages
 
+- **@findhub/shared** - Shared types, validation schemas, and utilities (framework-agnostic)
 - **@findhub/auth** - Authentication configuration and logic
-- **@findhub/db** - Database schema and queries
+- **@findhub/db** - Database schema, queries, and type inference
 - **Zod** - Runtime validation and type safety
 
 ## Code Quality

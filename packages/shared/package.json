@@ -1,31 +1,31 @@
 {
-  "name": "@findhub/shared",
-  "exports": {
-    "./types": {
-      "types": "./dist/types/type.d.ts",
-      "default": "./src/types/type.ts"
-    },
-    "./types/*": {
-      "types": "./dist/types/*.type.d.ts",
-      "default": "./src/types/*.type.ts"
-    },
-    "./schemas": {
-      "types": "./dist/schemas/item.schema.d.ts",
-      "default": "./src/schemas/item.schema.ts"
-    }
-  },
-  "type": "module",
-  "scripts": {
-    "build": "tsdown"
-  },
-  "devDependencies": {
-    "tsdown": "catalog:",
-    "@findhub/db": "workspace:*"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "dependencies": {
-    "zod": "catalog:"
-  }
+	"name": "@findhub/shared",
+	"exports": {
+		"./types": {
+			"types": "./dist/types/type.d.ts",
+			"default": "./src/types/type.ts"
+		},
+		"./types/*": {
+			"types": "./dist/types/*.type.d.ts",
+			"default": "./src/types/*.type.ts"
+		},
+		"./schemas": {
+			"types": "./dist/schemas/item.schema.d.ts",
+			"default": "./src/schemas/item.schema.ts"
+		}
+	},
+	"type": "module",
+	"scripts": {
+		"build": "tsdown"
+	},
+	"devDependencies": {
+		"tsdown": "catalog:",
+		"@findhub/db": "workspace:*"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"zod": "catalog:"
+	}
 }

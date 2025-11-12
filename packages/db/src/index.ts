@@ -1,10 +1,14 @@
 import dotenv from "dotenv";
 
 dotenv.config({
-  path: "../../apps/server/.env",
+	path: "../../apps/server/.env",
 });
 
 import { drizzle } from "drizzle-orm/node-postgres";
 
 // Database instance for server-side use only
 export const db = drizzle(process.env.DATABASE_URL || "");
+
+// Export schemas
+export * from "./schema/auth";
+export * from "./schema/items";
