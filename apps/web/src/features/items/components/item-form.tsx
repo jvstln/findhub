@@ -11,7 +11,15 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { ITEM_CATEGORIES } from "../lib/constants";
 
 // Create a form-specific schema that handles string inputs for date
 const formSchema = createItemSchema

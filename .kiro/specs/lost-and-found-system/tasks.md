@@ -126,7 +126,7 @@
   - Create `apps/web/src/features/items/components/item-detail.tsx` for full item view
   - _Requirements: 2.5, 3.1, 3.3, 9.1, 9.2, 9.3, 9.5_
 
-- [ ] 17. Build item form component
+- [x] 17. Build item form component
 
   - Create `apps/web/src/features/items/components/item-form.tsx` using react-hook-form
   - Use shadcn components in appropriate implementations (eg field components in implementing forms)
@@ -275,7 +275,7 @@
   - Ensure no horizontal scrolling on any device
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
 
-- [ ] 35. Write unit tests for core functionality
+- [ ]\* 35. Write unit tests for core functionality
   - Write tests for validation schemas
   - Write tests for API client functions
   - Write tests for custom hooks
