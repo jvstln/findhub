@@ -1,25 +1,15 @@
----
-inclusion: always
----
-
 # Product Overview
 
-**findhub** is a full-stack TypeScript application built with modern web technologies. It's a monorepo project that separates frontend (Next.js) and backend (Hono) concerns while sharing common packages for authentication, database access, and type-safe validation.
-
-## Key Characteristics
-
-- Full-stack TypeScript application with end-to-end type safety
-- Progressive Web App (PWA) support for offline-first capabilities
-- Authentication-enabled platform using Better-Auth
-- PostgreSQL-backed data persistence with Drizzle ORM
-- Monorepo architecture for code sharing and modularity
-- Type inference from database schema (single source of truth)
-- Framework-agnostic shared package for types and validation
+FindHub is a lost and found management system that helps users report, search, and track lost items. The platform provides both public and admin interfaces for managing lost items through their lifecycle from reported to claimed/disposed.
 
 ## Core Features
 
-- **Lost and Found System** - Report, search, and claim lost items
-- **User Authentication** - Secure login and user management
-- **Image Upload** - Upload and manage item photos
-- **Advanced Search** - Filter by category, location, date, and keywords
-- **Status Tracking** - Track item status (unclaimed, claimed, returned, archived)
+- Lost item reporting with file uploads
+- Public search and filtering
+- Admin workflow for item status management (unclaimed → claimed/disposed)
+- Progressive Web App (PWA) support for offline functionality
+- Authentication system for admin access
+
+## Architecture
+
+Full-stack TypeScript monorepo with separate frontend (Next.js) and backend (Hono) applications, sharing common packages for authentication, database access, and validation logic.

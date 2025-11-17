@@ -1,129 +1,89 @@
----
-inclusion: always
----
-
 # Project Structure
 
-## Monorepo Architecture
-
-Turborepo monorepo with two apps and three shared packages:
+## Monorepo Layout
 
 ```
 findhub/
-├── apps/
-│   ├── web/         # Next.js frontend (port 3001)
-│   └── server/      # Hono backend API (port 3000)
-└── packages/
-    ├── auth/        # Authentication logic (@findhub/auth)
-    ├── db/          # Database schema and queries (@findhub/db)
-    └── shared/      # Shared types and validation (@findhub/shared)
+├── apps/                    # Application workspaces
+│   ├── web/                # Frontend Next.js app (port 3001)
+│   └── server/             # Backend Hono API (port 3000)
+├── packages/               # Shared packages
+│   ├── auth/              # Authentication configuration
+│   ├── db/                # Database schemas and client
+│   └── shared/            # Shared types and validation
+├── e2e/                   # Playwright E2E tests
+└── [config files]         # Root-level configuration
 ```
 
-## Package Responsibilities
+## Apps
 
-### @findhub/shared
+### apps/web (Frontend)
+- Next.js application with App Router
+- Port: 3001
+- Contains: UI components, pages, client-side logic
+- Uses: shadcn/ui components, TailwindCSS, React Query
 
-**Purpose:** Framework-agnostic types and validation schemas
+### apps/server (Backend)
+- Hono API server
+- Port: 3000
+- Contains: API routes, business logic, file handling
+- Uses: Hono routing, Zod validation
 
-- TypeScript types (enums, interfaces, utility types)
-- Zod validation schemas
-- Re-exports database types from `@findhub/db` for convenience
-- No database or framework dependencies (only Zod)
-- Can be used in frontend, backend, or mobile apps
-- All types, schema or utility functions that require no specific dependency should be included and exported from this package
-
-**File naming conventions:**
-
-- Types: `*.type.ts` (e.g., `item.type.ts`)
-- Schemas: `*.schema.ts` (e.g., `item.schema.ts`)
-- Routes: `*.route.ts` (e.g., `item.route.ts`)
-- Utility functions: `*.util.ts` (e.g., `item.util.ts`)
+## Packages
 
 ### @findhub/db
+Database layer with subpath exports:
+- `.` - Database instance (server-side only)
+- `./types` - Inferred TypeScript types (build-time only)
+- `./schemas` - Drizzle table schemas (server-side only)
 
-**Purpose:** Database schema and type inference
+**Important:** Frontend uses `@findhub/db/types` as type-only imports to avoid bundling heavy database dependencies.
 
-- Drizzle ORM schema definitions
-- Database connection and configuration
-- Type inference using `$inferSelect` from schemas
-- Exports inferred types (e.g., `LostItem`, `StatusHistoryEntry`)
-- Single source of truth for database structure
+### @findhub/shared
+Shared application logic with subpath exports:
+- `./types` - Application-specific types
+- `./schemas` - Zod validation schemas (runtime)
+
+**Dependencies:** `@findhub/db` is a devDependency (types only, not bundled).
 
 ### @findhub/auth
+Authentication configuration using Better-Auth.
 
-**Purpose:** Authentication configuration and logic
+## Type Architecture Pattern
 
-- Better-Auth setup and configuration
-- Authentication utilities and helpers
-- Depends on `@findhub/db` for user storage
-
-## Dependency Rules
-
-**Import restrictions:**
-
-- `apps/web` → can import `@findhub/auth` and `@findhub/shared`
-- `apps/server` → can import `@findhub/auth`, `@findhub/db`, and `@findhub/shared`
-- `@findhub/auth` → depends on `@findhub/db`
-- `@findhub/shared` → depends on `@findhub/db` (for type re-exports)
-- `@findhub/db` → no internal dependencies
-
-**Package references:**
-
-- Use `workspace:*` protocol for internal packages
-- Use catalog versions for shared dependencies (better-auth, zod, typescript)
-
-## Type Architecture
-
-**Database types (from @findhub/db):**
-
-- Inferred from Drizzle schemas using `$inferSelect`
-- Examples: `LostItem`, `StatusHistoryEntry`, `ItemStatus`
-- Single source of truth - types match database structure
-
-**Application types (from @findhub/shared):**
-
-- Application-specific enums and interfaces
-- Examples: `ItemCategory`, `SearchFilters`, `PaginatedResponse`
-- Re-exports database types for convenience
-
-**Usage pattern:**
-
-```typescript
-// Recommended: Import all types from shared
-import type { LostItem, ItemStatus, SearchFilters } from "@findhub/shared";
-
-// Alternative: Import database types directly
-import type { LostItem } from "@findhub/db";
-import type { SearchFilters } from "@findhub/shared";
+**Type Flow:**
+```
+Database Schema (Drizzle)
+    ↓
+@findhub/db/types (inferred types)
+    ↓ (devDependency - build time only)
+@findhub/shared/types (application types)
+    ↓
+Available to frontend & backend (no runtime cost)
 ```
 
-## Package Exports
+**Import Guidelines:**
+- Frontend: Use `type` imports from `@findhub/db/types` (no runtime cost)
+- Backend: Can import database instance from `@findhub/db`
+- Both: Use validation schemas from `@findhub/shared/schemas` (runtime)
 
-All packages (`@findhub/auth`, `@findhub/db`, `@findhub/shared`):
+## Naming Conventions
 
-- Main export: `src/index.ts`
-- Individual exports: `src/*.ts` (allows importing specific modules)
-- Build output: `dist/` directory (gitignored)
+- **Schema files:** `*.schema.ts` (Zod validation)
+- **Type files:** `*.type.ts` (TypeScript types)
+- **Database types:** Singular PascalCase (e.g., `LostItem`)
+- **Application types:** Descriptive PascalCase (e.g., `SearchFilters`)
 
-## File Locations
+## Configuration Files
 
-**Entry points:**
+- **Root level:** Turborepo, Biome, Playwright, TypeScript configs
+- **App level:** Next.js config (web), tsdown config (server)
+- **Package level:** Individual package.json with workspace dependencies
 
-- Frontend: Standard Next.js App Router structure in `apps/web/app/`
-- Backend: `apps/server/src/index.ts`
+## Workspace Dependencies
 
-**Configuration:**
+Use `workspace:*` protocol for internal package references in package.json files.
 
-- Root configs: `biome.json`, `turbo.json`, `tsconfig.base.json`, `bunfig.toml`
-- Each workspace has its own `tsconfig.json` extending base config
-- Database migrations: `packages/db/` contains Drizzle Kit config
+## E2E Tests
 
-**Environment:**
-
-- Server env vars: `apps/server/.env` (included in Turbo task inputs)
-
-**Build artifacts (gitignored):**
-
-- `dist/` - TypeScript compilation output
-- `.turbo/` - Turborepo cache
-- `.next/` - Next.js build output
+Located in `/e2e` directory with Playwright configuration at root level. Tests cover admin flows, public flows, file uploads, offline functionality, and status workflows.
