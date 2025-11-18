@@ -91,8 +91,8 @@ export function ItemTable({
 				bValue = b.name.toLowerCase();
 				break;
 			case "category":
-				aValue = a.category?.toLowerCase() || "";
-				bValue = b.category?.toLowerCase() || "";
+				aValue = a.categoryId?.toString() || "";
+				bValue = b.categoryId?.toString() || "";
 				break;
 			case "dateFound":
 				aValue = new Date(a.dateFound).getTime();
@@ -318,7 +318,9 @@ export function ItemTable({
 									</TableCell>
 									<TableCell>
 										<Badge variant="secondary" className="capitalize">
-											{item.category || "Uncategorized"}
+											{item.categoryId
+												? `Category ${item.categoryId}`
+												: "Uncategorized"}
 										</Badge>
 									</TableCell>
 									<TableCell>

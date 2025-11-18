@@ -6,7 +6,6 @@ import {
 } from "@findhub/shared/schemas";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
-import { deleteFile, saveFile } from "../lib/upload";
 import { authMiddleware, getAuthUser } from "../middleware/auth.middleware";
 import { itemsService } from "../services/item.service";
 
@@ -130,43 +129,17 @@ items.post("/", authMiddleware, async (c) => {
 			);
 		}
 
-		// Handle image upload if provided
-		let imageUrl: string | undefined;
-		let imageKey: string | undefined;
-
-		if (image && image.size > 0) {
-			try {
-				const uploadResult = await saveFile(image);
-				imageUrl = uploadResult.url;
-				imageKey = uploadResult.key;
-			} catch (uploadError) {
-				console.error("Image upload error:", uploadError);
-				return c.json(
-					{
-						success: false,
-						error: {
-							code: "UPLOAD_ERROR",
-							message:
-								uploadError instanceof Error
-									? uploadError.message
-									: "Failed to upload image",
-						},
-					},
-					400,
-				);
-			}
-		}
-
-		// Create item
+		// Create item with image upload handled by service
 		const item = await itemsService.createItem({
 			name: validationResult.data.name,
 			description: validationResult.data.description,
-			category: validationResult.data.category,
+			categoryId: validationResult.data.category
+				? Number.parseInt(validationResult.data.category, 10)
+				: null,
 			keywords: validationResult.data.keywords,
 			location: validationResult.data.location,
 			dateFound: validationResult.data.dateFound,
-			imageUrl,
-			imageKey,
+			image: image && image.size > 0 ? image : undefined,
 			createdById: user.id,
 		});
 
@@ -180,15 +153,24 @@ items.post("/", authMiddleware, async (c) => {
 		);
 	} catch (error) {
 		console.error("Error creating item:", error);
+
+		// Handle Supabase Storage errors specifically
+		const errorMessage =
+			error instanceof Error ? error.message : "Failed to create item";
+		const isStorageError =
+			errorMessage.includes("upload") ||
+			errorMessage.includes("storage") ||
+			errorMessage.includes("Supabase");
+
 		return c.json(
 			{
 				success: false,
 				error: {
-					code: "CREATE_ERROR",
-					message: "Failed to create item",
+					code: isStorageError ? "STORAGE_ERROR" : "CREATE_ERROR",
+					message: errorMessage,
 				},
 			},
-			500,
+			isStorageError ? 400 : 500,
 		);
 	}
 });
@@ -268,55 +250,52 @@ items.patch(
 				);
 			}
 
-			// Prepare update input with proper typing
-			let imageUrl: string | undefined;
-			let imageKey: string | undefined;
+			// Build update input with proper typing
+			const updateInput: {
+				name?: string;
+				description?: string;
+				categoryId?: number | null;
+				keywords?: string;
+				location?: string;
+				dateFound?: Date;
+				status?: "unclaimed" | "claimed" | "returned" | "archived";
+				image?: File;
+			} = {};
 
-			// Handle image upload if provided
-			if (image && image.size > 0) {
-				try {
-					// Delete old image if exists
-					if (existingItem.imageKey) {
-						await deleteFile(existingItem.imageKey);
-					}
-
-					// Upload new image
-					const uploadResult = await saveFile(image);
-					imageUrl = uploadResult.url;
-					imageKey = uploadResult.key;
-				} catch (uploadError) {
-					console.error("Image upload error:", uploadError);
-					return c.json(
-						{
-							success: false,
-							error: {
-								code: "UPLOAD_ERROR",
-								message:
-									uploadError instanceof Error
-										? uploadError.message
-										: "Failed to upload image",
-							},
-						},
-						400,
-					);
-				}
+			// Add validated fields
+			if (validationResult.data.name)
+				updateInput.name = validationResult.data.name;
+			if (validationResult.data.description)
+				updateInput.description = validationResult.data.description;
+			if (validationResult.data.keywords)
+				updateInput.keywords = validationResult.data.keywords;
+			if (validationResult.data.location)
+				updateInput.location = validationResult.data.location;
+			if (validationResult.data.dateFound)
+				updateInput.dateFound = validationResult.data.dateFound;
+			if (validationResult.data.status)
+				updateInput.status = validationResult.data.status as
+					| "unclaimed"
+					| "claimed"
+					| "returned"
+					| "archived";
+			if (validationResult.data.category) {
+				updateInput.categoryId = Number.parseInt(
+					validationResult.data.category,
+					10,
+				);
 			}
 
-			// Build final update input
-			const updateInput = {
-				...validationResult.data,
-				...(imageUrl && { imageUrl }),
-				...(imageKey && { imageKey }),
-			};
+			// Add image if provided
+			if (image && image.size > 0) {
+				updateInput.image = image;
+			}
 
 			// If status is being updated, use the status update method to track history
-			if (
-				validationResult.data.status &&
-				validationResult.data.status !== existingItem.status
-			) {
+			if (updateInput.status && updateInput.status !== existingItem.status) {
 				await itemsService.updateItemStatus(id, {
-					status: validationResult.data.status,
-					notes: `Status updated to ${validationResult.data.status}`,
+					status: updateInput.status,
+					notes: `Status updated to ${updateInput.status}`,
 					changedById: user.id,
 				});
 
@@ -346,15 +325,25 @@ items.patch(
 			});
 		} catch (error) {
 			console.error("Error updating item:", error);
+
+			// Handle Supabase Storage errors specifically
+			const errorMessage =
+				error instanceof Error ? error.message : "Failed to update item";
+			const isStorageError =
+				errorMessage.includes("upload") ||
+				errorMessage.includes("storage") ||
+				errorMessage.includes("Supabase") ||
+				errorMessage.includes("delete");
+
 			return c.json(
 				{
 					success: false,
 					error: {
-						code: "UPDATE_ERROR",
-						message: "Failed to update item",
+						code: isStorageError ? "STORAGE_ERROR" : "UPDATE_ERROR",
+						message: errorMessage,
 					},
 				},
-				500,
+				isStorageError ? 400 : 500,
 			);
 		}
 	},
@@ -411,12 +400,19 @@ items.delete(
 			});
 		} catch (error) {
 			console.error("Error deleting item:", error);
+
+			// Handle Supabase Storage errors specifically
+			const errorMessage =
+				error instanceof Error ? error.message : "Failed to delete item";
+			const isStorageError =
+				errorMessage.includes("storage") || errorMessage.includes("Supabase");
+
 			return c.json(
 				{
 					success: false,
 					error: {
-						code: "DELETE_ERROR",
-						message: "Failed to delete item",
+						code: isStorageError ? "STORAGE_ERROR" : "DELETE_ERROR",
+						message: errorMessage,
 					},
 				},
 				500,

@@ -47,7 +47,7 @@ export function LoginForm() {
 			}
 
 			toast.success("Welcome back!");
-			router.push("/dashboard");
+			router.push("/admin/dashboard");
 			router.refresh();
 		} catch (error) {
 			console.error("Login error:", error);

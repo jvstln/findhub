@@ -22,17 +22,17 @@ import { authClient } from "@/lib/auth-client";
 const navigationItems = [
 	{
 		title: "Dashboard",
-		href: "/dashboard",
+		href: "/admin/dashboard",
 		icon: Home,
 	},
 	{
 		title: "All Items",
-		href: "/dashboard/items",
+		href: "/admin/items",
 		icon: Package,
 	},
 	{
 		title: "Add New Item",
-		href: "/dashboard/items/new",
+		href: "/admin/items/new",
 		icon: Plus,
 	},
 ];
@@ -50,7 +50,7 @@ const publicItems = [
 	},
 ];
 
-export function AppSidebar() {
+export function AdminSidebar() {
 	const pathname = usePathname();
 	const router = useRouter();
 	const { data: session } = authClient.useSession();
@@ -63,7 +63,10 @@ export function AppSidebar() {
 	return (
 		<Sidebar>
 			<SidebarHeader className="border-b p-4">
-				<Link href={"/dashboard" as Route} className="flex items-center gap-2">
+				<Link
+					href={"/admin/dashboard" as Route}
+					className="flex items-center gap-2"
+				>
 					<div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
 						<Package className="size-4" />
 					</div>

@@ -5,33 +5,41 @@ This directory contains comprehensive E2E tests for the FindHub application usin
 ## Test Coverage
 
 ### 1. Public User Flow (`public-flow.spec.ts`)
-- Complete search → view → claim info flow
+- Complete search → view → claim info flow **without seeing any auth UI**
+- Verification that NO login/signup buttons appear on public pages
 - Search functionality with filters
 - Category filtering
 - About page navigation and contact info
 - Responsive layout on mobile devices
+- **Verification that public routes don't trigger auth middleware**
 
 ### 2. Admin User Flow (`admin-flow.spec.ts`)
-- Complete login → create → update → delete flow
+- Complete login at `/admin/login` → create → update → delete flow
 - Form validation error handling
-- Authentication guard (redirect to login)
+- **Verification that admin routes are properly protected**
+- Authentication guard (redirect to `/admin/login`)
+- Multiple protected route testing
 
 ### 3. Status Change Workflow (`status-workflow.spec.ts`)
-- Update item status with history tracking
+- Update item status with **history tracking**
+- Multiple status changes (unclaimed → claimed → returned)
 - Status badge display on public view
 - Status history verification
 
 ### 4. File Upload and Image Display (`file-upload.spec.ts`)
-- Image upload and display
+- **Supabase Storage** image upload and display
 - File size and type validation
-- Image update functionality
+- Image update functionality with **Supabase Storage replacement**
+- **Supabase Storage cleanup on item deletion**
+- Verification of image URLs from Supabase
 
 ### 5. Offline Functionality (`offline-functionality.spec.ts`)
 - Offline indicator display
 - Cached search results for offline access
 - Error handling when creating items offline
-- Service worker registration
+- Service worker registration (PWA)
 - Data synchronization when coming back online
+- Offline navigation within cached pages
 
 ## Running Tests
 
@@ -42,7 +50,9 @@ This directory contains comprehensive E2E tests for the FindHub application usin
 
 2. Database should be set up and migrated
 
-3. Test user should exist:
+3. **Supabase Storage bucket "lost-items" should be configured**
+
+4. Test user should exist:
    - Email: `admin@findhub.com`
    - Password: `password123`
 

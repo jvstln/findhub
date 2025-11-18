@@ -26,9 +26,11 @@ FindHub is a campus lost-and-found management platform designed for university e
 1. THE FindHub System SHALL provide a new lost item form interface as part of the dashboard UI
 2. WHEN an Admin User submits a new item form with name, description, date found, category, keywords/tags, location, and image/images, THE FindHub System SHALL create a new Lost Item record with status "Unclaimed"
 3. THE FindHub System SHALL support image uploads with file size up to 5 megabytes in JPEG, PNG, or WebP format
-4. WHEN an Admin User attempts to submit an item form with missing required fields, THE FindHub System SHALL display validation errors and prevent submission
-5. THE FindHub System SHALL store the item creation timestamp and associate it with the Admin User account
-6. WHEN an image upload exceeds size limits or uses unsupported format or tries to input valid values, THE FindHub System SHALL display an error message and reject the upload
+4. WHEN an Admin User uploads an image, THE FindHub System SHALL store the file in Supabase Storage bucket named "lost-items" with a unique UUID-based key
+5. THE FindHub System SHALL store only the public URL or signed URL reference in the database, not the file itself
+6. WHEN an Admin User attempts to submit an item form with missing required fields, THE FindHub System SHALL display validation errors and prevent submission
+7. THE FindHub System SHALL store the item creation timestamp and associate it with the Admin User account
+8. WHEN an image upload exceeds size limits or uses unsupported format, THE FindHub System SHALL display an error message and reject the upload
 
 ### Requirement 2: Item Search and Discovery
 
@@ -73,9 +75,10 @@ FindHub is a campus lost-and-found management platform designed for university e
 
 1. WHEN an Admin User selects an edit action for a Lost Item, THE FindHub System SHALL display a form pre-populated with current item details
 2. WHEN an Admin User submits updated item details, THE FindHub System SHALL validate the changes and update the Lost Item record
-3. WHEN an Admin User selects a delete action for a Lost Item, THE FindHub System SHALL display a confirmation dialog
-4. WHEN an Admin User confirms deletion, THE FindHub System SHALL mark the Lost Item record and associated image as "deleted" on the database for security reasons
-5. THE FindHub System SHALL prevent deletion of Lost Items with status "Claimed" without additional confirmation
+3. WHEN an Admin User uploads a new image during edit, THE FindHub System SHALL upload to Supabase Storage and delete the previous image from the bucket
+4. WHEN an Admin User selects a delete action for a Lost Item, THE FindHub System SHALL display a confirmation dialog
+5. WHEN an Admin User confirms deletion, THE FindHub System SHALL mark the Lost Item record as deleted in the database and remove associated images from Supabase Storage bucket
+6. THE FindHub System SHALL prevent deletion of Lost Items with status "Claimed" without additional confirmation
 
 ### Requirement 6: Admin Authentication
 
@@ -136,6 +139,8 @@ FindHub is a campus lost-and-found management platform designed for university e
 3. THE FindHub System SHALL display admin office hours and contact methods on the about page
 4. THE FindHub System SHALL provide clear instructions on the claim process
 5. THE FindHub System SHALL ensure all public pages are accessible without authentication
+6. THE FindHub System SHALL NOT display login, signup, or any authentication-related UI elements on public pages
+7. THE FindHub System SHALL structure public pages as a completely separate route group from admin pages
 
 ### Requirement 11: User Interface Quality
 
@@ -164,9 +169,36 @@ FindHub is a campus lost-and-found management platform designed for university e
 6. WHEN an unexpected error occurs, THE FindHub System SHALL log the error details and display a user-friendly message
 7. THE FindHub System SHALL prevent duplicate form submissions by disabling submit buttons during processing
 
-### Requirement 13: Code structure and additional packages
+### Requirement 13: Supabase Storage Integration
 
-**User Story:** As the Developer, I want to be able to maintain and edit this codebase without much hazzle.
+**User Story:** As a Developer, I want all item images stored in Supabase Storage with proper access controls, so that the system can scale efficiently and manage files securely.
+
+#### Acceptance Criteria
+
+1. THE FindHub System SHALL create a Supabase Storage bucket named "lost-items" with public read access
+2. WHEN uploading an image, THE FindHub System SHALL generate a unique UUID-based filename to prevent collisions
+3. THE FindHub System SHALL store only the public URL or signed URL in the database, not the binary file data
+4. WHEN retrieving images, THE FindHub System SHALL use Supabase public URLs for display
+5. WHEN deleting an item, THE FindHub System SHALL remove the associated file from the Supabase Storage bucket
+6. THE FindHub System SHALL handle Supabase Storage errors gracefully and display user-friendly error messages
+7. THE FindHub System SHALL configure appropriate CORS settings for Supabase Storage to allow uploads from the application domain
+
+### Requirement 14: Route Architecture and Access Control
+
+**User Story:** As a Developer, I want clear separation between public and admin routes with proper access controls, so that public users never encounter admin functionality.
+
+#### Acceptance Criteria
+
+1. THE FindHub System SHALL structure public pages under the root route group (/, /search, /items/[id], /about)
+2. THE FindHub System SHALL structure admin pages under the /admin route group (/admin/login, /admin/dashboard, /admin/items)
+3. THE FindHub System SHALL apply authentication middleware only to /admin routes, not to public routes
+4. WHEN an unauthenticated user attempts to access /admin routes, THE FindHub System SHALL redirect to /admin/login
+5. THE FindHub System SHALL ensure public users never trigger authentication checks or see admin-related UI elements
+6. THE FindHub System SHALL use separate layout components for public and admin route groups
+
+### Requirement 15: Code structure and additional packages
+
+**User Story:** As the Developer, I want to be able to maintain and edit this codebase without much hassle.
 
 #### Acceptance Criteria
 
@@ -177,4 +209,5 @@ FindHub is a campus lost-and-found management platform designed for university e
 5. THE FindHub Codebase SHALL use zod for data validation
 6. THE FindHub Codebase SHALL use framer-motion (now known as motion.dev) for animations
 7. THE FindHub Codebase SHALL use NextJS, Shadcn components and Tailwind CSS wherever possible
-8. THE FindHub Codebase SHALL prioritize reusability whereever possible
+8. THE FindHub Codebase SHALL prioritize reusability wherever possible
+9. THE FindHub Codebase SHALL use Supabase JavaScript client library for all Supabase Storage operations

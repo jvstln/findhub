@@ -71,7 +71,74 @@ graph TB
 - **State**: TanStack Query for server state and Zustand for state management
 - **Forms**: React hook form with Zod validation
 - **PWA**: Next.js PWA plugin with Workbox
-- **File Storage**: Local filesystem with public URL access
+- **File Storage**: Supabase Storage with public bucket access
+
+## Route Architecture and Access Control
+
+### Public vs Admin Route Separation
+
+The application uses a clear route structure to separate public and admin functionality:
+
+**Public Routes** (No authentication required):
+- `/` - Home page with hero section and featured items
+- `/about` - About page with contact info and claim instructions
+- `/search` - Search page with filters
+- `/items/[id]` - Item detail page
+
+**Admin Routes** (Authentication required):
+- `/admin/login` - Admin login page (public access but admin-focused)
+- `/admin/dashboard` - Admin dashboard with item management
+- `/admin/items/new` - Create new item form
+- `/admin/items/[id]/edit` - Edit item form
+
+### Middleware Strategy
+
+```typescript
+// apps/web/src/middleware.ts
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+  
+  // Only apply auth checks to /admin routes (except /admin/login)
+  if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
+    const session = request.cookies.get('session')
+    
+    if (!session) {
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
+  }
+  
+  return NextResponse.next()
+}
+
+export const config = {
+  matcher: '/admin/:path*'
+}
+```
+
+### Layout Separation
+
+**Public Layout** (`app/layout.tsx`):
+- Clean navigation without auth UI
+- Footer with contact info
+- No admin links or buttons
+- Optimized for public discovery
+
+**Admin Layout** (`app/admin/layout.tsx`):
+- Protected by auth guard
+- Admin sidebar navigation
+- User profile/logout controls
+- Dashboard-focused UI
+
+### Key Design Principles
+
+1. **Zero Auth UI on Public Pages**: Public users never see login, signup, or admin buttons
+2. **Middleware Only on Admin Routes**: Authentication checks only run for `/admin/*` paths
+3. **Separate Layout Trees**: Public and admin pages use completely different layouts
+4. **Clear URL Structure**: `/admin/*` prefix makes admin routes immediately identifiable
+5. **No Shared Navigation**: Public header and admin sidebar are completely separate components
 
 ## Components and Interfaces
 
@@ -80,18 +147,18 @@ graph TB
 ```
 apps/web/src/
 ├── app/                          # Next.js App Router
-│   ├── (public)/                 # Public layout group
-│   │   ├── page.tsx              # Home page
-│   │   ├── about/page.tsx        # About page
-│   │   ├── search/page.tsx       # Search page
-│   │   └── items/[id]/page.tsx   # Item details
-│   ├── (admin)/                  # Admin layout group
-│   │   ├── layout.tsx            # Protected layout
-│   │   ├── dashboard/page.tsx    # Dashboard
-│   │   └── items/                # Item management
-│   │       ├── new/page.tsx      # Create item
-│   │       └── [id]/edit/page.tsx # Edit item
-│   └── login/page.tsx            # Login page
+│   ├── page.tsx                  # Public home page
+│   ├── about/page.tsx            # Public about page
+│   ├── search/page.tsx           # Public search page
+│   ├── items/[id]/page.tsx       # Public item details
+│   ├── layout.tsx                # Public root layout (no auth UI)
+│   └── admin/                    # Admin route group
+│       ├── layout.tsx            # Protected admin layout
+│       ├── login/page.tsx        # Admin login page
+│       ├── dashboard/page.tsx    # Admin dashboard
+│       └── items/                # Admin item management
+│           ├── new/page.tsx      # Create item
+│           └── [id]/edit/page.tsx # Edit item
 ├── features/                     # Feature-sliced modules
 │   ├── items/                    # Lost items feature
 │   │   ├── api/                  # API client functions
@@ -191,8 +258,8 @@ export const lostItem = pgTable("lost_item", {
   location: varchar(, { length: 255 }).notNull(),
   dateFound: timestamp().notNull(),
   status: varchar(, { length: 50 }).notNull().default("unclaimed"),
-  imageUrl: text(),
-  imageKey: text(), // For file deletion
+  imageUrl: text(), // Supabase Storage public URL
+  imageKey: text(), // Supabase Storage file path for deletion
   createdById: text()
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
@@ -387,7 +454,7 @@ export const searchFiltersSchema = z.object({
 }
 ```
 
-## File Upload Strategy
+## File Upload Strategy (Supabase Storage)
 
 ### Image Upload Flow
 
@@ -396,22 +463,38 @@ export const searchFiltersSchema = z.object({
 3. **Upload**: FormData sent to backend with multipart/form-data
 4. **Backend Processing**:
    - Validate file again on server
-   - Generate unique filename: `{timestamp}-{uuid}.{ext}`
-   - Save to `apps/server/public/uploads/items/`
-   - Store relative URL in database: `/uploads/items/{filename}`
-5. **Serving**: Hono serves static files from public directory
-6. **Deletion**: When item deleted, remove file using stored imageKey
+   - Generate unique filename: `{uuid}.{ext}`
+   - Upload to Supabase Storage bucket "lost-items" using Supabase client
+   - Get public URL from Supabase
+   - Store public URL and file path in database
+5. **Serving**: Images served directly from Supabase CDN via public URLs
+6. **Deletion**: When item deleted, remove file from Supabase Storage using stored imageKey
 
-### File Storage Structure
+### Supabase Storage Configuration
+
+```typescript
+// Supabase Storage setup
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_KEY!
+)
+
+// Bucket configuration
+// - Name: "lost-items"
+// - Public: true (for public read access)
+// - File size limit: 5MB
+// - Allowed MIME types: image/jpeg, image/png, image/webp
+```
+
+### File Storage Structure in Supabase
 
 ```
-apps/server/
-└── public/
-    └── uploads/
-        └── items/
-            ├── 1699123456-abc123.jpg
-            ├── 1699123457-def456.png
-            └── ...
+Supabase Storage Bucket: lost-items/
+├── abc123-def456-ghi789.jpg
+├── jkl012-mno345-pqr678.png
+└── stu901-vwx234-yz567.webp
 ```
 
 ## Error Handling
@@ -651,6 +734,123 @@ export function OfflineIndicator() {
 - **Frontend**: React Testing Library + Vitest
 - **E2E**: Playwright (optional)
 
+## Supabase Storage Integration Details
+
+### Backend Upload Service
+
+```typescript
+// apps/server/src/services/upload.service.ts
+import { createClient } from '@supabase/supabase-js'
+import { v4 as uuidv4 } from 'uuid'
+
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_KEY!
+)
+
+export async function uploadItemImage(file: File): Promise<{ url: string; key: string }> {
+  // Validate file
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error('Invalid file type')
+  }
+  
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error('File size exceeds 5MB')
+  }
+
+  // Generate unique filename
+  const ext = file.name.split('.').pop()
+  const filename = `${uuidv4()}.${ext}`
+
+  // Upload to Supabase
+  const { data, error } = await supabase.storage
+    .from('lost-items')
+    .upload(filename, file, {
+      contentType: file.type,
+      upsert: false
+    })
+
+  if (error) throw error
+
+  // Get public URL
+  const { data: { publicUrl } } = supabase.storage
+    .from('lost-items')
+    .getPublicUrl(filename)
+
+  return {
+    url: publicUrl,
+    key: filename
+  }
+}
+
+export async function deleteItemImage(key: string): Promise<void> {
+  const { error } = await supabase.storage
+    .from('lost-items')
+    .remove([key])
+
+  if (error) throw error
+}
+```
+
+### Frontend Upload Component
+
+```typescript
+// Frontend can optionally upload directly to Supabase
+// or proxy through backend for additional validation
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
+// Direct upload (if using RLS policies)
+async function uploadDirect(file: File) {
+  const filename = `${crypto.randomUUID()}.${file.name.split('.').pop()}`
+  
+  const { data, error } = await supabase.storage
+    .from('lost-items')
+    .upload(filename, file)
+    
+  if (error) throw error
+  
+  const { data: { publicUrl } } = supabase.storage
+    .from('lost-items')
+    .getPublicUrl(filename)
+    
+  return { url: publicUrl, key: filename }
+}
+```
+
+### Supabase Storage Bucket Setup
+
+1. **Create Bucket**: In Supabase dashboard, create bucket named "lost-items"
+2. **Set Public Access**: Enable public access for read operations
+3. **Configure RLS Policies** (optional):
+   - Allow public SELECT (read)
+   - Allow authenticated INSERT (upload) - if using direct upload
+   - Allow authenticated DELETE (cleanup) - if using direct upload
+4. **Set File Size Limit**: Configure 5MB max file size in bucket settings
+5. **Configure CORS**: Add application domain to allowed origins
+
+### Error Handling for Supabase Operations
+
+```typescript
+// Handle Supabase-specific errors
+try {
+  await uploadItemImage(file)
+} catch (error) {
+  if (error.message.includes('Bucket not found')) {
+    // Handle bucket configuration error
+  } else if (error.message.includes('exceeded')) {
+    // Handle quota/size limit error
+  } else {
+    // Generic error
+  }
+}
+```
+
 ## Security Considerations
 
 ### Authentication & Authorization
@@ -671,8 +871,10 @@ export function OfflineIndicator() {
 
 1. **File Type Validation**: Whitelist JPEG, PNG, WebP only
 2. **File Size Limits**: Max 5MB enforced on client and server
-3. **Filename Sanitization**: Generate unique filenames, ignore user input
-4. **Storage Isolation**: Files stored outside application code directory
+3. **Filename Sanitization**: Generate UUID-based filenames, ignore user input
+4. **Storage Isolation**: Files stored in Supabase Storage with proper access controls
+5. **Bucket Policies**: Configure Supabase RLS policies to restrict upload/delete operations
+6. **Public URL Security**: Use Supabase public URLs for read-only access, signed URLs for temporary access if needed
 
 ### Rate Limiting (Future Enhancement)
 
@@ -764,9 +966,13 @@ const breakpoints = {
 DATABASE_URL=postgresql://user:password@localhost:5432/findhub
 CORS_ORIGIN=http://localhost:3001
 PORT=3000
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_KEY=your-service-role-key
 
 # apps/web/.env.local
 NEXT_PUBLIC_API_URL=http://localhost:3000
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
 ### Build Process
@@ -785,16 +991,18 @@ cd apps/web && bun run start
 
 ### Production Checklist
 
-- [ ] Set secure environment variables
+- [ ] Set secure environment variables (including Supabase credentials)
 - [ ] Enable HTTPS for both frontend and backend
-- [ ] Configure CORS for production domain
+- [ ] Configure CORS for production domain (including Supabase Storage)
 - [ ] Set up database backups
-- [ ] Configure file upload limits
+- [ ] Configure Supabase Storage bucket with proper RLS policies
+- [ ] Set file upload limits in Supabase bucket settings
 - [ ] Enable error logging and monitoring
 - [ ] Test PWA installation on mobile devices
 - [ ] Verify offline functionality
 - [ ] Run security audit
 - [ ] Performance testing under load
+- [ ] Verify Supabase Storage CDN performance
 
 ## Future Enhancements
 

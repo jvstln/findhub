@@ -1,25 +1,34 @@
 "use client";
 
 import type { Route } from "next";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { AppSidebar } from "@/components/app-sidebar";
+import { AdminSidebar } from "@/components/admin-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { authClient } from "@/lib/auth-client";
 
-export default function DashboardLayout({
+export default function AdminLayout({
 	children,
 }: {
 	children: React.ReactNode;
 }) {
 	const router = useRouter();
+	const pathname = usePathname();
 	const { data: session, isPending } = authClient.useSession();
 
+	// Allow access to login page without authentication
+	const isLoginPage = pathname === "/admin/login";
+
 	useEffect(() => {
-		if (!isPending && !session) {
-			router.push("/login" as Route);
+		if (!isPending && !session && !isLoginPage) {
+			router.push("/admin/login" as Route);
 		}
-	}, [session, isPending, router]);
+	}, [session, isPending, isLoginPage, router]);
+
+	// Login page doesn't need auth check or sidebar
+	if (isLoginPage) {
+		return <>{children}</>;
+	}
 
 	// Show loading state while checking auth
 	if (isPending) {
@@ -40,7 +49,7 @@ export default function DashboardLayout({
 
 	return (
 		<SidebarProvider>
-			<AppSidebar />
+			<AdminSidebar />
 			<SidebarInset>{children}</SidebarInset>
 		</SidebarProvider>
 	);

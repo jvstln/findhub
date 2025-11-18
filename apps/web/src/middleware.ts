@@ -3,28 +3,16 @@ import { type NextRequest, NextResponse } from "next/server";
 export default async function authMiddleware(request: NextRequest) {
 	const { pathname } = request.nextUrl;
 
-	// Public routes that don't require authentication
-	const publicRoutes = [
-		"/",
-		"/login",
-		"/signup",
-		"/search",
-		"/items",
-		"/about",
-	];
-	const isPublicRoute =
-		publicRoutes.some(
-			(route) => pathname === route || pathname.startsWith(`${route}/`),
-		) ||
-		pathname.startsWith("/_next") ||
-		pathname.startsWith("/api") ||
-		pathname.includes(".");
+	// Only protect /admin routes (except /admin/login)
+	const isAdminRoute = pathname.startsWith("/admin");
+	const isAdminLoginRoute = pathname === "/admin/login";
 
-	if (isPublicRoute) {
+	// Allow all non-admin routes and the admin login page
+	if (!isAdminRoute || isAdminLoginRoute) {
 		return NextResponse.next();
 	}
 
-	// Check authentication for protected routes (dashboard)
+	// Check authentication for protected admin routes
 	try {
 		const response = await fetch(
 			`${request.nextUrl.origin}/api/auth/get-session`,
@@ -36,8 +24,8 @@ export default async function authMiddleware(request: NextRequest) {
 		);
 
 		if (!response.ok) {
-			// Redirect to login if not authenticated
-			const loginUrl = new URL("/login", request.url);
+			// Redirect to admin login if not authenticated
+			const loginUrl = new URL("/admin/login", request.url);
 			loginUrl.searchParams.set("from", pathname);
 			return NextResponse.redirect(loginUrl);
 		}
@@ -45,15 +33,15 @@ export default async function authMiddleware(request: NextRequest) {
 		const session = await response.json();
 
 		if (!session?.user) {
-			// Redirect to login if no user in session
-			const loginUrl = new URL("/login", request.url);
+			// Redirect to admin login if no user in session
+			const loginUrl = new URL("/admin/login", request.url);
 			loginUrl.searchParams.set("from", pathname);
 			return NextResponse.redirect(loginUrl);
 		}
 	} catch (error) {
 		console.error("Auth middleware error:", error);
-		// Redirect to login on error
-		const loginUrl = new URL("/login", request.url);
+		// Redirect to admin login on error
+		const loginUrl = new URL("/admin/login", request.url);
 		loginUrl.searchParams.set("from", pathname);
 		return NextResponse.redirect(loginUrl);
 	}
@@ -62,5 +50,5 @@ export default async function authMiddleware(request: NextRequest) {
 }
 
 export const config = {
-	matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+	matcher: ["/admin/:path*"],
 };

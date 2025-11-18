@@ -3,6 +3,7 @@
 import type { ItemStatus, LostItem } from "@findhub/shared/types/item";
 import { Archive, Package, PackageCheck, PackageX } from "lucide-react";
 import { motion } from "motion/react";
+import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -23,7 +24,7 @@ import {
 } from "@/features/items/hooks/use-item-mutations";
 import { useItems } from "@/features/items/hooks/use-items";
 
-export default function DashboardPage() {
+export default function AdminDashboardPage() {
 	const router = useRouter();
 	const [statusFilter, setStatusFilter] = useState<ItemStatus | "all">("all");
 	const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -60,17 +61,19 @@ export default function DashboardPage() {
 		};
 	}, [data]);
 
-	// Get unique categories
-	const categories = useMemo(() => {
+	// Get unique category IDs
+	const categoryIds = useMemo(() => {
 		const items = data?.data || [];
-		const uniqueCategories = new Set(
-			items.map((item) => item.category).filter(Boolean),
+		const uniqueCategoryIds = new Set(
+			items
+				.map((item) => item.categoryId)
+				.filter((id): id is number => id !== null),
 		);
-		return Array.from(uniqueCategories).sort();
+		return Array.from(uniqueCategoryIds).sort((a, b) => a - b);
 	}, [data]);
 
 	const handleEdit = (item: LostItem) => {
-		router.push(`/dashboard/items/${item.id}/edit`);
+		router.push(`/admin/items/${item.id}/edit` as Route);
 	};
 
 	const handleDelete = async (item: LostItem) => {
@@ -253,7 +256,7 @@ export default function DashboardPage() {
 
 						<div className="flex items-center gap-2">
 							<label htmlFor="category-filter" className="font-medium text-sm">
-								Category:
+								Category ID:
 							</label>
 							<Select value={categoryFilter} onValueChange={setCategoryFilter}>
 								<SelectTrigger id="category-filter" className="w-[180px]">
@@ -261,9 +264,9 @@ export default function DashboardPage() {
 								</SelectTrigger>
 								<SelectContent>
 									<SelectItem value="all">All Categories</SelectItem>
-									{categories.map((category) => (
-										<SelectItem key={category} value={category || "unknown"}>
-											{category || "Unknown"}
+									{categoryIds.map((categoryId) => (
+										<SelectItem key={categoryId} value={categoryId.toString()}>
+											Category {categoryId}
 										</SelectItem>
 									))}
 								</SelectContent>

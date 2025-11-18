@@ -3,9 +3,9 @@
 import { Package } from "lucide-react";
 import { motion } from "motion/react";
 import Link from "next/link";
-import { SignupForm } from "@/features/auth/components/signup-form";
+import { LoginForm } from "@/features/auth/components/login-form";
 
-export default function SignupPage() {
+export default function AdminLoginPage() {
 	return (
 		<div className="flex min-h-screen items-center justify-center bg-linear-to-br from-background to-muted/20 p-4">
 			<motion.div
@@ -22,27 +22,18 @@ export default function SignupPage() {
 						</div>
 					</Link>
 					<h1 className="mt-4 font-bold text-3xl tracking-tight">
-						Create an account
+						Admin Login
 					</h1>
 					<p className="mt-2 text-muted-foreground">
-						Sign up to manage lost and found items
+						Sign in to access the admin dashboard
 					</p>
 				</div>
 
-				{/* Signup Form Card */}
-				<SignupForm />
+				{/* Login Form Card */}
+				<LoginForm />
 
 				{/* Footer Links */}
 				<div className="mt-6 text-center text-muted-foreground text-sm">
-					<p>
-						Already have an account?{" "}
-						<a
-							href="/login"
-							className="font-medium text-primary hover:underline"
-						>
-							Sign in
-						</a>
-					</p>
 					<p className="mt-2">
 						<a href="/" className="hover:underline">
 							← Back to home

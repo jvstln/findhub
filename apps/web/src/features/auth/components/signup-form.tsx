@@ -55,7 +55,7 @@ export function SignupForm() {
 			}
 
 			toast.success("Account created successfully!");
-			router.push("/dashboard");
+			router.push("/admin/dashboard");
 			router.refresh();
 		} catch (error) {
 			console.error("Signup error:", error);

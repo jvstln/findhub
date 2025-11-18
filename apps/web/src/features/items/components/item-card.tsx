@@ -71,7 +71,9 @@ export function ItemCard({ item, onClick, className }: ItemCardProps) {
 
 					<div className="pt-1">
 						<span className="inline-flex rounded-md bg-secondary px-2 py-1 font-medium text-secondary-foreground text-xs capitalize">
-							{item.category}
+							{item.categoryId
+								? `Category ${item.categoryId}`
+								: "Uncategorized"}
 						</span>
 					</div>
 				</CardContent>

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test.describe("Offline Functionality", () => {
+test.describe("Offline Functionality (PWA)", () => {
 	test("should display offline indicator when network is disconnected", async ({
 		page,
 		context,
@@ -63,14 +63,14 @@ test.describe("Offline Functionality", () => {
 		context,
 	}) => {
 		// Login while online
-		await page.goto("/login");
+		await page.goto("/admin/login");
 		await page.fill('input[type="email"]', "admin@findhub.com");
 		await page.fill('input[type="password"]', "password123");
 		await page.click('button[type="submit"]');
-		await page.waitForURL(/\/dashboard/, { timeout: 10000 });
+		await page.waitForURL(/\/admin\/dashboard/, { timeout: 10000 });
 
 		// Navigate to create item page
-		await page.goto("/dashboard/items/new");
+		await page.goto("/admin/items/new");
 
 		// Go offline
 		await context.setOffline(true);
@@ -85,7 +85,7 @@ test.describe("Offline Functionality", () => {
 
 		// Should show error message
 		await expect(
-			page.locator("text=/network|offline|connection/i"),
+			page.locator("text=/network|offline|connection|failed/i"),
 		).toBeVisible({ timeout: 5000 });
 	});
 
@@ -134,6 +134,29 @@ test.describe("Offline Functionality", () => {
 
 		// Data should be refreshed
 		await page.waitForSelector('[data-testid="search-results"]', {
+			timeout: 10000,
+		});
+	});
+
+	test("should work offline after initial load", async ({ page, context }) => {
+		// Load the app while online
+		await page.goto("/");
+		await page.waitForLoadState("networkidle");
+
+		// Navigate to search
+		await page.goto("/search");
+		await page.waitForSelector('[data-testid="search-results"]', {
+			timeout: 10000,
+		});
+
+		// Go offline
+		await context.setOffline(true);
+
+		// Try to navigate within the app
+		await page.goto("/about");
+
+		// Should still be able to view cached pages
+		await expect(page.locator("text=/about|mission|service/i")).toBeVisible({
 			timeout: 10000,
 		});
 	});

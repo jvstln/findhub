@@ -49,12 +49,6 @@ export function Footer() {
 							>
 								About Us
 							</Link>
-							<Link
-								href={"/login" as Route}
-								className="text-muted-foreground text-sm transition-colors hover:text-primary"
-							>
-								Admin Login
-							</Link>
 						</nav>
 					</div>
 

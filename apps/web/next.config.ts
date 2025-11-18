@@ -63,12 +63,16 @@ const withPWA = withPWAInit({
 				},
 			},
 			{
-				// Item images - CacheFirst for performance
+				// Item images from local uploads and Supabase Storage - CacheFirst for performance
 				urlPattern: ({ url }) => {
-					return (
+					const isLocalUpload =
 						url.pathname.startsWith("/uploads/items/") &&
-						/\.(?:jpg|jpeg|png|webp|gif)$/i.test(url.pathname)
-					);
+						/\.(?:jpg|jpeg|png|webp|gif)$/i.test(url.pathname);
+					const isSupabaseStorage =
+						url.hostname.includes("supabase.co") &&
+						url.pathname.includes("/storage/v1/object/public/lost-items/") &&
+						/\.(?:jpg|jpeg|png|webp|gif)$/i.test(url.pathname);
+					return isLocalUpload || isSupabaseStorage;
 				},
 				handler: "CacheFirst",
 				options: {
@@ -138,6 +142,11 @@ const nextConfig: NextConfig = {
 				hostname: "localhost",
 				port: "3000",
 				pathname: "/uploads/**",
+			},
+			{
+				protocol: "https",
+				hostname: "*.supabase.co",
+				pathname: "/storage/v1/object/public/**",
 			},
 		],
 	},

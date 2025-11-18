@@ -1,14 +1,27 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("Public User Flow", () => {
-	test("should complete search → view → claim info flow", async ({ page }) => {
+	test("should complete search → view → claim info flow without seeing auth UI", async ({
+		page,
+	}) => {
 		// Navigate to home page
 		await page.goto("/");
 		await expect(page).toHaveTitle(/FindHub/i);
 
+		// Verify NO auth UI elements are visible on public pages
+		await expect(
+			page.locator("text=/login|sign in|sign up/i"),
+		).not.toBeVisible();
+		await expect(page.locator('a[href*="/admin"]')).not.toBeVisible();
+
 		// Navigate to search page
 		await page.click('a[href="/search"]');
 		await expect(page).toHaveURL(/\/search/);
+
+		// Verify NO auth UI on search page
+		await expect(
+			page.locator("text=/login|sign in|sign up/i"),
+		).not.toBeVisible();
 
 		// Wait for search results to load
 		await page.waitForSelector('[data-testid="search-results"]', {
@@ -35,6 +48,11 @@ test.describe("Public User Flow", () => {
 
 			// Verify we're on the item detail page
 			await expect(page).toHaveURL(/\/items\/\d+/);
+
+			// Verify NO auth UI on item detail page
+			await expect(
+				page.locator("text=/login|sign in|sign up/i"),
+			).not.toBeVisible();
 
 			// Verify item details are displayed
 			await expect(page.locator("h1")).toBeVisible();
@@ -75,6 +93,11 @@ test.describe("Public User Flow", () => {
 		await page.click('a[href="/about"]');
 		await expect(page).toHaveURL(/\/about/);
 
+		// Verify NO auth UI on about page
+		await expect(
+			page.locator("text=/login|sign in|sign up/i"),
+		).not.toBeVisible();
+
 		// Verify about page content
 		await expect(page.locator("text=/about|mission|service/i")).toBeVisible();
 		await expect(page.locator("text=/contact|office|hours/i")).toBeVisible();
@@ -100,5 +123,22 @@ test.describe("Public User Flow", () => {
 		// Verify mobile-friendly layout
 		const searchInput = page.locator('input[placeholder*="Search"]');
 		await expect(searchInput).toBeVisible();
+	});
+
+	test("should verify public routes don't trigger auth middleware", async ({
+		page,
+	}) => {
+		// Test that public routes are accessible without authentication
+		const publicRoutes = ["/", "/search", "/about"];
+
+		for (const route of publicRoutes) {
+			await page.goto(route);
+			// Should NOT redirect to login
+			await expect(page).toHaveURL(route);
+			// Should NOT show auth UI
+			await expect(
+				page.locator("text=/login|sign in|sign up/i"),
+			).not.toBeVisible();
+		}
 	});
 });

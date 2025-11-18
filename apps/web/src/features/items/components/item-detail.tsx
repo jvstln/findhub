@@ -43,7 +43,9 @@ export function ItemDetail({
 							<div className="flex flex-wrap items-center gap-2">
 								<StatusBadge status={item.status} />
 								<span className="inline-flex rounded-md bg-secondary px-3 py-1 font-medium text-secondary-foreground text-sm capitalize">
-									{item.category}
+									{item.categoryId
+										? `Category ${item.categoryId}`
+										: "Uncategorized"}
 								</span>
 							</div>
 						</div>

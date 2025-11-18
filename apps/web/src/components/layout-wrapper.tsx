@@ -7,10 +7,10 @@ import { Header } from "./header";
 export function LayoutWrapper({ children }: { children: React.ReactNode }) {
 	const pathname = usePathname();
 
-	// Don't show header/footer on dashboard pages (they have their own layout)
-	const isDashboardPage = pathname?.startsWith("/dashboard");
+	// Don't show header/footer on admin pages (they have their own layout)
+	const isAdminPage = pathname?.startsWith("/admin");
 
-	if (isDashboardPage) {
+	if (isAdminPage) {
 		return <>{children}</>;
 	}
 

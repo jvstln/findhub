@@ -6,11 +6,17 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ImageIcon, Loader2Icon, XIcon } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import {
+	Field,
+	FieldDescription,
+	FieldError,
+	FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
 	Select,
 	SelectContent,
@@ -25,7 +31,7 @@ import { ITEM_CATEGORIES } from "../lib/constants";
 const formSchema = createItemSchema
 	.omit({ image: true, dateFound: true })
 	.extend({
-		dateFound: z.string(),
+		dateFound: z.string().min(1, "Date found is required"),
 		image: z.any().optional(),
 	});
 
@@ -71,12 +77,13 @@ export function ItemForm({
 		formState: { errors },
 		setValue,
 		watch,
+		control,
 	} = useForm<FormData>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
 			name: defaultValues?.name || "",
 			description: defaultValues?.description || "",
-			category: defaultValues?.category || undefined,
+			category: defaultValues?.categoryId?.toString() || "",
 			keywords: defaultValues?.keywords || "",
 			location: defaultValues?.location || "",
 			dateFound: defaultValues?.dateFound
@@ -104,7 +111,7 @@ export function ItemForm({
 		if (file) {
 			// Validate file size (5MB)
 			if (file.size > 5 * 1024 * 1024) {
-				alert("Image must be less than 5MB");
+				toast.error("Image must be less than 5MB");
 				e.target.value = "";
 				return;
 			}
@@ -112,7 +119,7 @@ export function ItemForm({
 			// Validate file type
 			const validTypes = ["image/jpeg", "image/png", "image/webp"];
 			if (!validTypes.includes(file.type)) {
-				alert("Image must be JPEG, PNG, or WebP format");
+				toast.error("Image must be JPEG, PNG, or WebP format");
 				e.target.value = "";
 				return;
 			}
@@ -144,10 +151,10 @@ export function ItemForm({
 	return (
 		<form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
 			{/* Name Field */}
-			<div className="space-y-2">
-				<Label htmlFor="name">
+			<Field data-invalid={!!errors.name}>
+				<FieldLabel htmlFor="name">
 					Item Name <span className="text-destructive">*</span>
-				</Label>
+				</FieldLabel>
 				<Input
 					id="name"
 					{...register("name")}
@@ -155,16 +162,14 @@ export function ItemForm({
 					aria-invalid={!!errors.name}
 					disabled={isLoading}
 				/>
-				{errors.name && (
-					<p className="text-destructive text-sm">{errors.name.message}</p>
-				)}
-			</div>
+				<FieldError>{errors.name?.message}</FieldError>
+			</Field>
 
 			{/* Description Field */}
-			<div className="space-y-2">
-				<Label htmlFor="description">
+			<Field data-invalid={!!errors.description}>
+				<FieldLabel htmlFor="description">
 					Description <span className="text-destructive">*</span>
-				</Label>
+				</FieldLabel>
 				<Textarea
 					id="description"
 					{...register("description")}
@@ -173,50 +178,46 @@ export function ItemForm({
 					aria-invalid={!!errors.description}
 					disabled={isLoading}
 				/>
-				{errors.description && (
-					<p className="text-destructive text-sm">
-						{errors.description.message}
-					</p>
-				)}
-			</div>
+				<FieldError>{errors.description?.message}</FieldError>
+			</Field>
 
 			{/* Category Field */}
-			<div className="space-y-2">
-				<Label htmlFor="category">
+			<Field data-invalid={!!errors.category}>
+				<FieldLabel htmlFor="category">
 					Category <span className="text-destructive">*</span>
-				</Label>
-				{/* <Select
-					onValueChange={(value) =>
-						setValue("category", value as ItemCategory, {
-							shouldValidate: true,
-						})
-					}
-					defaultValue={defaultValues?.category}
-					disabled={isLoading}
-				>
-					<SelectTrigger
-						id="category"
-						className="w-full"
-						aria-invalid={!!errors.category}
-					>
-						<SelectValue placeholder="Select a category" />
-					</SelectTrigger>
-					<SelectContent>
-						{ITEM_CATEGORIES.map((cat) => (
-							<SelectItem key={cat.value} value={cat.value}>
-								{cat.label}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select> */}
-				{errors.category && (
-					<p className="text-destructive text-sm">{errors.category.message}</p>
-				)}
-			</div>
+				</FieldLabel>
+				<Controller
+					name="category"
+					control={control}
+					render={({ field }) => (
+						<Select
+							onValueChange={field.onChange}
+							value={field.value}
+							disabled={isLoading}
+						>
+							<SelectTrigger
+								id="category"
+								className="w-full"
+								aria-invalid={!!errors.category}
+							>
+								<SelectValue placeholder="Select a category" />
+							</SelectTrigger>
+							<SelectContent>
+								{ITEM_CATEGORIES.map((cat) => (
+									<SelectItem key={cat.value} value={cat.value}>
+										{cat.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					)}
+				/>
+				<FieldError>{errors.category?.message}</FieldError>
+			</Field>
 
 			{/* Keywords Field */}
-			<div className="space-y-2">
-				<Label htmlFor="keywords">Keywords/Tags</Label>
+			<Field data-invalid={!!errors.keywords}>
+				<FieldLabel htmlFor="keywords">Keywords/Tags</FieldLabel>
 				<Input
 					id="keywords"
 					{...register("keywords")}
@@ -224,19 +225,17 @@ export function ItemForm({
 					aria-invalid={!!errors.keywords}
 					disabled={isLoading}
 				/>
-				<p className="text-muted-foreground text-xs">
+				<FieldDescription>
 					Optional keywords to help with search
-				</p>
-				{errors.keywords && (
-					<p className="text-destructive text-sm">{errors.keywords.message}</p>
-				)}
-			</div>
+				</FieldDescription>
+				<FieldError>{errors.keywords?.message}</FieldError>
+			</Field>
 
 			{/* Location Field */}
-			<div className="space-y-2">
-				<Label htmlFor="location">
+			<Field data-invalid={!!errors.location}>
+				<FieldLabel htmlFor="location">
 					Location Found <span className="text-destructive">*</span>
-				</Label>
+				</FieldLabel>
 				<Input
 					id="location"
 					{...register("location")}
@@ -244,16 +243,14 @@ export function ItemForm({
 					aria-invalid={!!errors.location}
 					disabled={isLoading}
 				/>
-				{errors.location && (
-					<p className="text-destructive text-sm">{errors.location.message}</p>
-				)}
-			</div>
+				<FieldError>{errors.location?.message}</FieldError>
+			</Field>
 
 			{/* Date Found Field */}
-			<div className="space-y-2">
-				<Label htmlFor="dateFound">
+			<Field data-invalid={!!errors.dateFound}>
+				<FieldLabel htmlFor="dateFound">
 					Date Found <span className="text-destructive">*</span>
-				</Label>
+				</FieldLabel>
 				<Input
 					id="dateFound"
 					type="date"
@@ -262,14 +259,12 @@ export function ItemForm({
 					aria-invalid={!!errors.dateFound}
 					disabled={isLoading}
 				/>
-				{errors.dateFound && (
-					<p className="text-destructive text-sm">{errors.dateFound.message}</p>
-				)}
-			</div>
+				<FieldError>{errors.dateFound?.message}</FieldError>
+			</Field>
 
 			{/* Image Upload Field */}
-			<div className="space-y-2">
-				<Label htmlFor="image">Item Image</Label>
+			<Field data-invalid={!!errors.image}>
+				<FieldLabel htmlFor="image">Item Image</FieldLabel>
 				<div className="space-y-4">
 					{imagePreview ? (
 						<div className="relative w-full max-w-md">
@@ -321,12 +316,11 @@ export function ItemForm({
 						</div>
 					)}
 				</div>
-				{errors.image && (
-					<p className="text-destructive text-sm">
-						{errors.image.message as string}
-					</p>
-				)}
-			</div>
+				<FieldDescription>
+					Upload a clear photo of the item to help with identification
+				</FieldDescription>
+				<FieldError>{errors.image?.message as string}</FieldError>
+			</Field>
 
 			{/* Form Actions */}
 			<div className="flex gap-3 pt-4">
