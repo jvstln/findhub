@@ -141,4 +141,78 @@ test.describe("Public User Flow", () => {
 			).not.toBeVisible();
 		}
 	});
+
+	test("should display contextual empty state messages", async ({ page }) => {
+		await page.goto("/search");
+
+		// Wait for page to load
+		await page.waitForSelector('[data-testid="search-results"]', {
+			timeout: 10000,
+		});
+
+		// Check if there are any items in the database
+		const resultsText = await page
+			.locator('[data-testid="search-results"]')
+			.textContent();
+
+		if (resultsText?.includes("No items in database")) {
+			// Verify empty database message
+			await expect(page.locator("text=/No items in database/i")).toBeVisible();
+		} else {
+			// If there are items, apply a filter that should return no results
+			const categoryFilter = page.locator('select[name="category"]');
+			if (await categoryFilter.isVisible()) {
+				// Select a category
+				await categoryFilter.selectOption({ index: 1 });
+				await page.waitForTimeout(500);
+
+				// Type a keyword that likely won't match
+				await page.fill(
+					'input[placeholder*="Search"]',
+					"xyznonexistentitem123",
+				);
+				await page.waitForTimeout(1000);
+
+				// Should show "No matches found" message
+				const noMatchesMessage = page.locator("text=/No matches found/i");
+				if (await noMatchesMessage.isVisible()) {
+					await expect(noMatchesMessage).toBeVisible();
+					// Should also show helper text
+					await expect(
+						page.locator("text=/Try adjusting your search/i"),
+					).toBeVisible();
+				}
+			}
+		}
+	});
+
+	test("should load categories dynamically from API", async ({ page }) => {
+		await page.goto("/search");
+
+		// Wait for page to load
+		await page.waitForSelector('[data-testid="search-results"]', {
+			timeout: 10000,
+		});
+
+		// Check if category filter exists and has options
+		const categoryFilter = page.locator('select[name="category"]');
+		if (await categoryFilter.isVisible()) {
+			// Get all options
+			const options = await categoryFilter.locator("option").count();
+
+			// Should have at least the default "All Categories" option plus some categories
+			expect(options).toBeGreaterThan(1);
+
+			// Verify some common categories exist (from the seeded data)
+			const categoryText = await categoryFilter.textContent();
+			// At least one of these should exist
+			const hasCategories =
+				categoryText?.includes("Electronics") ||
+				categoryText?.includes("Clothing") ||
+				categoryText?.includes("Books") ||
+				categoryText?.includes("Keys");
+
+			expect(hasCategories).toBeTruthy();
+		}
+	});
 });

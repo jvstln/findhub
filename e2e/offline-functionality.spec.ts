@@ -62,15 +62,15 @@ test.describe("Offline Functionality (PWA)", () => {
 		page,
 		context,
 	}) => {
-		// Login while online
-		await page.goto("/admin/login");
+		// Login while online (admin app)
+		await page.goto("http://localhost:3002/login");
 		await page.fill('input[type="email"]', "admin@findhub.com");
 		await page.fill('input[type="password"]', "password123");
 		await page.click('button[type="submit"]');
-		await page.waitForURL(/\/admin\/dashboard/, { timeout: 10000 });
+		await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 
 		// Navigate to create item page
-		await page.goto("/admin/items/new");
+		await page.goto("http://localhost:3002/items/new");
 
 		// Go offline
 		await context.setOffline(true);

@@ -24,7 +24,11 @@
 		"db:push": "drizzle-kit push",
 		"db:studio": "drizzle-kit studio",
 		"db:generate": "drizzle-kit generate",
-		"db:migrate": "drizzle-kit migrate"
+		"db:migrate": "drizzle-kit migrate",
+		"seed:categories": "bun run src/seeds/run-seed.ts categories",
+		"seed:all": "bun run src/seeds/run-seed.ts all",
+		"seed:check": "bun run src/seeds/check-seeds.ts",
+		"seed": "bun run src/seeds/run-seed.ts"
 	},
 	"devDependencies": {
 		"drizzle-kit": "^0.31.2",

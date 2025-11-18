@@ -95,7 +95,7 @@ export function SearchFilters({
 							onCategoryChange(value === "all" ? undefined : value)
 						}
 					>
-						<SelectTrigger id="category-filter">
+						<SelectTrigger id="category-filter" className="w-full">
 							<SelectValue placeholder="All categories" />
 						</SelectTrigger>
 						<SelectContent>
@@ -119,7 +119,7 @@ export function SearchFilters({
 								onLocationChange(value === "all" ? undefined : value)
 							}
 						>
-							<SelectTrigger id="location-filter">
+							<SelectTrigger id="location-filter" className="w-full">
 								<SelectValue placeholder="All locations" />
 							</SelectTrigger>
 							<SelectContent>
@@ -138,6 +138,7 @@ export function SearchFilters({
 							value={filters.location || ""}
 							onChange={(e) => onLocationChange(e.target.value || undefined)}
 							placeholder="Enter location"
+							className="w-full"
 						/>
 					)}
 				</div>
@@ -155,7 +156,7 @@ export function SearchFilters({
 							)
 						}
 					>
-						<SelectTrigger id="status-filter">
+						<SelectTrigger id="status-filter" className="w-full">
 							<SelectValue placeholder="All statuses" />
 						</SelectTrigger>
 						<SelectContent>
@@ -178,6 +179,7 @@ export function SearchFilters({
 						value={formatDateForInput(filters.dateFrom)}
 						onChange={handleDateFromChange}
 						max={formatDateForInput(filters.dateTo || new Date())}
+						className="w-full"
 					/>
 				</div>
 
@@ -190,6 +192,7 @@ export function SearchFilters({
 						onChange={handleDateToChange}
 						min={formatDateForInput(filters.dateFrom)}
 						max={formatDateForInput(new Date())}
+						className="w-full"
 					/>
 				</div>
 			</CardContent>

@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 export function Header() {
 	const pathname = usePathname();
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+	const isSearchPage = pathname === "/search";
 
 	const navItems = [
 		{ href: "/" as Route, label: "Home" },
@@ -51,12 +52,14 @@ export function Header() {
 
 				{/* Desktop Actions */}
 				<div className="hidden items-center gap-4 md:flex">
-					<Button variant="ghost" size="sm" asChild>
-						<Link href={"/search" as Route}>
-							<Search className="size-4" />
-							Search
-						</Link>
-					</Button>
+					{!isSearchPage && (
+						<Button variant="ghost" size="sm" asChild>
+							<Link href={"/search" as Route}>
+								<Search className="size-4" />
+								Search
+							</Link>
+						</Button>
+					)}
 				</div>
 
 				{/* Mobile Menu */}
@@ -103,20 +106,22 @@ export function Header() {
 
 							{/* Mobile Actions */}
 							<div className="flex flex-col gap-3 border-t pt-6">
-								<Button
-									variant="outline"
-									size="sm"
-									asChild
-									className="w-full justify-start"
-								>
-									<Link
-										href={"/search" as Route}
-										onClick={() => setMobileMenuOpen(false)}
+								{!isSearchPage && (
+									<Button
+										variant="outline"
+										size="sm"
+										asChild
+										className="w-full justify-start"
 									>
-										<Search className="size-4" />
-										Search Items
-									</Link>
-								</Button>
+										<Link
+											href={"/search" as Route}
+											onClick={() => setMobileMenuOpen(false)}
+										>
+											<Search className="size-4" />
+											Search Items
+										</Link>
+									</Button>
+								)}
 							</div>
 						</div>
 					</SheetContent>

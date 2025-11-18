@@ -10,7 +10,38 @@ import { ItemGrid } from "@/features/items/components/item-grid";
 interface SearchResultsProps {
 	data: PaginatedResponse<LostItem>;
 	isLoading?: boolean;
+	hasActiveFilters?: boolean;
 	onPageChange: (page: number) => void;
+}
+
+interface EmptyStateMessageProps {
+	isLoading: boolean;
+	hasActiveFilters: boolean;
+	total: number;
+}
+
+/**
+ * Determines the appropriate empty state message based on loading state,
+ * filter state, and data availability
+ */
+function getEmptyStateMessage({
+	isLoading,
+	hasActiveFilters,
+	total,
+}: EmptyStateMessageProps): string {
+	if (isLoading) {
+		return "Loading results...";
+	}
+
+	if (total === 0 && !hasActiveFilters) {
+		return "No items in database";
+	}
+
+	if (total === 0 && hasActiveFilters) {
+		return "No matches found";
+	}
+
+	return "Type to search for items";
 }
 
 /**
@@ -20,6 +51,7 @@ interface SearchResultsProps {
 export function SearchResults({
 	data,
 	isLoading = false,
+	hasActiveFilters = false,
 	onPageChange,
 }: SearchResultsProps) {
 	const { data: items, page, totalPages, total } = data;
@@ -53,14 +85,20 @@ export function SearchResults({
 	}
 
 	if (items.length === 0) {
+		const message = getEmptyStateMessage({
+			isLoading,
+			hasActiveFilters,
+			total,
+		});
+
 		return (
 			<div className="flex flex-col items-center justify-center py-12 text-center">
-				<p className="font-medium text-lg text-muted-foreground">
-					No items found
-				</p>
-				<p className="mt-2 text-muted-foreground text-sm">
-					Try adjusting your search filters or keywords
-				</p>
+				<p className="font-medium text-lg text-muted-foreground">{message}</p>
+				{hasActiveFilters && total === 0 && (
+					<p className="mt-2 text-muted-foreground text-sm">
+						Try adjusting your search filters or keywords
+					</p>
+				)}
 			</div>
 		);
 	}

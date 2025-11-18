@@ -1,7 +1,2 @@
-export { itemKeys, useItem, useItemHistory } from "./use-item";
-export {
-	useCreateItem,
-	useDeleteItem,
-	useUpdateItem,
-} from "./use-item-mutations";
+export { itemKeys, useItem } from "./use-item";
 export { itemsKeys, useItems } from "./use-items";

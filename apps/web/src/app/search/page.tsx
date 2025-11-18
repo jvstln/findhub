@@ -4,24 +4,13 @@ import { motion } from "motion/react";
 import { CachedDataBadge } from "@/components/cached-data-badge";
 import { ErrorState } from "@/components/error-state";
 import { QueryErrorBoundary } from "@/components/query-error-boundary";
+import { useCategories } from "@/features/categories/hooks/use-categories";
 import { useItems } from "@/features/items/hooks/use-items";
 import { SearchBar } from "@/features/search/components/search-bar";
 import { SearchFilters } from "@/features/search/components/search-filters";
 import { SearchResults } from "@/features/search/components/search-results";
 import { useSearch } from "@/features/search/hooks/use-search";
 import { useOnlineStatus } from "@/hooks/use-online-status";
-
-// Common categories for filtering
-const COMMON_CATEGORIES = [
-	"Electronics",
-	"Clothing",
-	"Accessories",
-	"Books",
-	"Keys",
-	"Cards",
-	"Bags",
-	"Other",
-];
 
 // Common locations for filtering
 const COMMON_LOCATIONS = [
@@ -51,6 +40,7 @@ export default function SearchPage() {
 
 	const { data, isLoading, error, isFetching, refetch } = useItems(filters);
 	const { isOnline } = useOnlineStatus();
+	const { data: categories } = useCategories();
 
 	// Default empty response for loading/error states
 	const defaultResponse = {
@@ -111,7 +101,7 @@ export default function SearchPage() {
 							onDateToChange={setDateTo}
 							onReset={resetFilters}
 							hasActiveFilters={hasActiveFilters}
-							categories={COMMON_CATEGORIES}
+							categories={categories?.map((c) => c.name) || []}
 							locations={COMMON_LOCATIONS}
 						/>
 					</motion.aside>
@@ -134,6 +124,7 @@ export default function SearchPage() {
 							<SearchResults
 								data={data || defaultResponse}
 								isLoading={isLoading}
+								hasActiveFilters={hasActiveFilters}
 								onPageChange={setPage}
 							/>
 						)}

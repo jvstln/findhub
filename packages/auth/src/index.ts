@@ -6,10 +6,11 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 export const auth = betterAuth<BetterAuthOptions>({
 	database: drizzleAdapter(db, {
 		provider: "pg",
-
 		schema: schema,
+		usePlural: true,
 	}),
-	trustedOrigins: [process.env.CORS_ORIGIN || ""],
+
+	trustedOrigins: process.env.CORS_ORIGIN?.split(/,\s*/) || [],
 	emailAndPassword: {
 		enabled: true,
 	},

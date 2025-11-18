@@ -4,17 +4,17 @@ import { expect, test } from "@playwright/test";
 test.describe("File Upload and Image Display (Supabase Storage)", () => {
 	test.beforeEach(async ({ page }) => {
 		// Login as admin
-		await page.goto("/admin/login");
+		await page.goto("http://localhost:3002/login");
 		await page.fill('input[type="email"]', "admin@findhub.com");
 		await page.fill('input[type="password"]', "password123");
 		await page.click('button[type="submit"]');
-		await page.waitForURL(/\/admin\/dashboard/, { timeout: 10000 });
+		await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 	});
 
 	test("should upload image to Supabase Storage and display it", async ({
 		page,
 	}) => {
-		await page.goto("/admin/items/new");
+		await page.goto("http://localhost:3002/items/new");
 
 		// Fill form
 		const timestamp = Date.now();
@@ -48,7 +48,7 @@ test.describe("File Upload and Image Display (Supabase Storage)", () => {
 
 		// Submit form
 		await page.click('button[type="submit"]');
-		await page.waitForURL(/\/admin\/dashboard/, { timeout: 10000 });
+		await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 
 		// Find the item and view it publicly
 		const itemRow = page.locator(`text=Image Test ${timestamp}`);
@@ -57,13 +57,13 @@ test.describe("File Upload and Image Display (Supabase Storage)", () => {
 			.locator("button")
 			.first()
 			.click();
-		await page.waitForURL(/\/admin\/items\/(\d+)\/edit/);
+		await page.waitForURL(/\/items\/(\d+)\/edit/);
 
 		const url = page.url();
 		const itemId = url.match(/\/items\/(\d+)\/edit/)?.[1];
 
-		// View on public page
-		await page.goto(`/items/${itemId}`);
+		// View on public page (switch to web app)
+		await page.goto(`http://localhost:3001/items/${itemId}`);
 
 		// Verify image is displayed from Supabase Storage
 		const itemImage = page.locator('img[alt*="item"]');
@@ -77,8 +77,8 @@ test.describe("File Upload and Image Display (Supabase Storage)", () => {
 			}
 		}
 
-		// Clean up - this should also delete from Supabase Storage
-		await page.goto("/admin/dashboard");
+		// Clean up - this should also delete from Supabase Storage (switch back to admin)
+		await page.goto("http://localhost:3002/dashboard");
 		await itemRow
 			.locator("xpath=ancestor::tr")
 			.locator("button")
@@ -93,7 +93,7 @@ test.describe("File Upload and Image Display (Supabase Storage)", () => {
 	});
 
 	test("should validate file size and type", async ({ page }) => {
-		await page.goto("/admin/items/new");
+		await page.goto("http://localhost:3002/items/new");
 
 		// Fill basic form fields
 		await page.fill('input[name="name"]', "Validation Test");
@@ -116,7 +116,7 @@ test.describe("File Upload and Image Display (Supabase Storage)", () => {
 
 	test("should update item image in Supabase Storage", async ({ page }) => {
 		// Create item without image first
-		await page.goto("/admin/items/new");
+		await page.goto("http://localhost:3002/items/new");
 
 		const timestamp = Date.now();
 		await page.fill('input[name="name"]', `Update Image ${timestamp}`);
@@ -129,7 +129,7 @@ test.describe("File Upload and Image Display (Supabase Storage)", () => {
 		await page.fill('input[name="dateFound"]', "2024-01-15");
 		await page.click('button[type="submit"]');
 
-		await page.waitForURL(/\/admin\/dashboard/, { timeout: 10000 });
+		await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 
 		// Edit the item and add an image
 		const itemRow = page.locator(`text=Update Image ${timestamp}`);
@@ -138,7 +138,7 @@ test.describe("File Upload and Image Display (Supabase Storage)", () => {
 			.locator("button")
 			.first()
 			.click();
-		await page.waitForURL(/\/admin\/items\/(\d+)\/edit/);
+		await page.waitForURL(/\/items\/(\d+)\/edit/);
 
 		const fileInput = page.locator('input[type="file"]');
 		if (await fileInput.isVisible()) {
@@ -150,7 +150,7 @@ test.describe("File Upload and Image Display (Supabase Storage)", () => {
 			);
 			await fileInput.setInputFiles(testImagePath);
 			await page.click('button[type="submit"]');
-			await page.waitForURL(/\/admin\/dashboard/, { timeout: 10000 });
+			await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 
 			// Verify update success
 			await expect(page.locator("text=/updated successfully/i")).toBeVisible({
@@ -159,7 +159,7 @@ test.describe("File Upload and Image Display (Supabase Storage)", () => {
 		}
 
 		// Clean up - should delete image from Supabase Storage
-		await page.goto("/admin/dashboard");
+		await page.goto("http://localhost:3002/dashboard");
 		await itemRow
 			.locator("xpath=ancestor::tr")
 			.locator("button")
@@ -170,7 +170,7 @@ test.describe("File Upload and Image Display (Supabase Storage)", () => {
 
 	test("should cleanup Supabase Storage on item deletion", async ({ page }) => {
 		// Create item with image
-		await page.goto("/admin/items/new");
+		await page.goto("http://localhost:3002/items/new");
 
 		const timestamp = Date.now();
 		await page.fill('input[name="name"]', `Cleanup Test ${timestamp}`);
@@ -191,7 +191,7 @@ test.describe("File Upload and Image Display (Supabase Storage)", () => {
 		}
 
 		await page.click('button[type="submit"]');
-		await page.waitForURL(/\/admin\/dashboard/, { timeout: 10000 });
+		await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 
 		// Delete the item - should trigger Supabase Storage cleanup
 		const itemRow = page.locator(`text=Cleanup Test ${timestamp}`);

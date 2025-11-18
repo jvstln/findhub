@@ -3,16 +3,16 @@ import { expect, test } from "@playwright/test";
 test.describe("Status Change Workflow with History Tracking", () => {
 	test.beforeEach(async ({ page }) => {
 		// Login as admin
-		await page.goto("/admin/login");
+		await page.goto("/login");
 		await page.fill('input[type="email"]', "admin@findhub.com");
 		await page.fill('input[type="password"]', "password123");
 		await page.click('button[type="submit"]');
-		await page.waitForURL(/\/admin\/dashboard/, { timeout: 10000 });
+		await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 	});
 
 	test("should update item status and track history", async ({ page }) => {
 		// Create a test item first
-		await page.goto("/admin/items/new");
+		await page.goto("/items/new");
 
 		const timestamp = Date.now();
 		await page.fill('input[name="name"]', `Status Test ${timestamp}`);
@@ -25,7 +25,7 @@ test.describe("Status Change Workflow with History Tracking", () => {
 		await page.fill('input[name="dateFound"]', "2024-01-15");
 		await page.click('button[type="submit"]');
 
-		await page.waitForURL(/\/admin\/dashboard/, { timeout: 10000 });
+		await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 
 		// Find and edit the item
 		const itemRow = page.locator(`text=Status Test ${timestamp}`);
@@ -34,13 +34,13 @@ test.describe("Status Change Workflow with History Tracking", () => {
 			.locator("button")
 			.first()
 			.click();
-		await page.waitForURL(/\/admin\/items\/\d+\/edit/);
+		await page.waitForURL(/\/items\/\d+\/edit/);
 
 		// Change status to "claimed"
 		await page.selectOption('select[name="status"]', "claimed");
 		await page.click('button[type="submit"]');
 
-		await page.waitForURL(/\/admin\/dashboard/, { timeout: 10000 });
+		await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 
 		// Verify status update success
 		await expect(page.locator("text=/updated successfully/i")).toBeVisible({
@@ -53,7 +53,7 @@ test.describe("Status Change Workflow with History Tracking", () => {
 			.locator("button")
 			.first()
 			.click();
-		await page.waitForURL(/\/admin\/items\/\d+\/edit/);
+		await page.waitForURL(/\/items\/\d+\/edit/);
 
 		// Check if history section exists
 		const historySection = page.locator("text=/history|status changes/i");
@@ -66,7 +66,7 @@ test.describe("Status Change Workflow with History Tracking", () => {
 		await page.selectOption('select[name="status"]', "returned");
 		await page.click('button[type="submit"]');
 
-		await page.waitForURL(/\/admin\/dashboard/, { timeout: 10000 });
+		await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 
 		// Verify second status update
 		await expect(page.locator("text=/updated successfully/i")).toBeVisible({
@@ -74,7 +74,7 @@ test.describe("Status Change Workflow with History Tracking", () => {
 		});
 
 		// Clean up - delete the test item
-		await page.goto("/admin/dashboard");
+		await page.goto("/dashboard");
 		await itemRow
 			.locator("xpath=ancestor::tr")
 			.locator("button")
@@ -87,7 +87,7 @@ test.describe("Status Change Workflow with History Tracking", () => {
 		page,
 	}) => {
 		// Create an item
-		await page.goto("/admin/items/new");
+		await page.goto("/items/new");
 
 		const timestamp = Date.now();
 		await page.fill('input[name="name"]', `Public Status ${timestamp}`);
@@ -97,7 +97,7 @@ test.describe("Status Change Workflow with History Tracking", () => {
 		await page.fill('input[name="dateFound"]', "2024-01-15");
 		await page.click('button[type="submit"]');
 
-		await page.waitForURL(/\/admin\/dashboard/, { timeout: 10000 });
+		await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 
 		// Get the item ID from the URL when editing
 		const itemRow = page.locator(`text=Public Status ${timestamp}`);
@@ -106,21 +106,21 @@ test.describe("Status Change Workflow with History Tracking", () => {
 			.locator("button")
 			.first()
 			.click();
-		await page.waitForURL(/\/admin\/items\/(\d+)\/edit/);
+		await page.waitForURL(/\/items\/(\d+)\/edit/);
 
 		const url = page.url();
 		const itemId = url.match(/\/items\/(\d+)\/edit/)?.[1];
 
-		// View item on public page
-		await page.goto(`/items/${itemId}`);
+		// View item on public page (need to switch to web app)
+		await page.goto(`http://localhost:3001/items/${itemId}`);
 
 		// Verify status is displayed
 		await expect(
 			page.locator("text=/unclaimed|claimed|returned/i"),
 		).toBeVisible();
 
-		// Clean up
-		await page.goto("/admin/dashboard");
+		// Clean up (switch back to admin app)
+		await page.goto("http://localhost:3002/dashboard");
 		await itemRow
 			.locator("xpath=ancestor::tr")
 			.locator("button")
@@ -131,7 +131,7 @@ test.describe("Status Change Workflow with History Tracking", () => {
 
 	test("should track multiple status changes in history", async ({ page }) => {
 		// Create item
-		await page.goto("/admin/items/new");
+		await page.goto("/items/new");
 
 		const timestamp = Date.now();
 		await page.fill('input[name="name"]', `History Test ${timestamp}`);
@@ -144,7 +144,7 @@ test.describe("Status Change Workflow with History Tracking", () => {
 		await page.fill('input[name="dateFound"]', "2024-01-15");
 		await page.click('button[type="submit"]');
 
-		await page.waitForURL(/\/admin\/dashboard/, { timeout: 10000 });
+		await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 
 		const itemRow = page.locator(`text=History Test ${timestamp}`);
 
@@ -154,10 +154,10 @@ test.describe("Status Change Workflow with History Tracking", () => {
 			.locator("button")
 			.first()
 			.click();
-		await page.waitForURL(/\/admin\/items\/\d+\/edit/);
+		await page.waitForURL(/\/items\/\d+\/edit/);
 		await page.selectOption('select[name="status"]', "claimed");
 		await page.click('button[type="submit"]');
-		await page.waitForURL(/\/admin\/dashboard/, { timeout: 10000 });
+		await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 
 		// Second status change: claimed → returned
 		await itemRow
@@ -165,10 +165,10 @@ test.describe("Status Change Workflow with History Tracking", () => {
 			.locator("button")
 			.first()
 			.click();
-		await page.waitForURL(/\/admin\/items\/\d+\/edit/);
+		await page.waitForURL(/\/items\/\d+\/edit/);
 		await page.selectOption('select[name="status"]', "returned");
 		await page.click('button[type="submit"]');
-		await page.waitForURL(/\/admin\/dashboard/, { timeout: 10000 });
+		await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 
 		// Clean up
 		await itemRow

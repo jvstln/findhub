@@ -8,8 +8,11 @@ import type {
 
 // Re-export database types
 export type {
+	ItemImage,
 	ItemStatus,
 	LostItem,
+	LostItemWithImages,
+	LostItemWithImagesAndHistory,
 	StatusHistoryEntry,
 } from "@findhub/db/schemas/items";
 

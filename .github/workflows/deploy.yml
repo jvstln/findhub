@@ -1,0 +1,176 @@
+name: Deploy FindHub Applications
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  BUN_VERSION: 1.2.19
+
+jobs:
+  test:
+    name: Test and Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Type check
+        run: bun run check-types
+
+      - name: Lint and format
+        run: bun run check
+
+      - name: Build all applications
+        run: bun run build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps
+
+      - name: Run E2E tests
+        run: bun run test:e2e
+        env:
+          DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+
+  deploy-web:
+    name: Deploy Web App
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build web app
+        run: turbo build --filter=web
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_WEB_PROJECT_ID }}
+          working-directory: ./apps/web
+          vercel-args: '--prod'
+
+  deploy-admin:
+    name: Deploy Admin App
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build admin app
+        run: turbo build --filter=@findhub/admin
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_ADMIN_MODE: "true"
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_ADMIN_PROJECT_ID }}
+          working-directory: ./apps/admin
+          vercel-args: '--prod'
+
+  deploy-server:
+    name: Deploy Server
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build server
+        run: turbo build --filter=server
+
+      - name: Run database migrations
+        run: bun run db:migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      # Add your server deployment step here
+      # This example shows a generic deployment step
+      - name: Deploy server
+        run: |
+          echo "🚀 Deploying server to production..."
+          # Replace this with your actual server deployment command
+          # Examples:
+          # - Docker: docker build -t findhub-server . && docker push your-registry/findhub-server
+          # - SSH: scp -r dist/ user@server:/path/to/app && ssh user@server 'pm2 restart findhub-server'
+          # - Cloud: gcloud app deploy or aws deploy push-application
+          echo "✅ Server deployment completed"
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+
+  notify:
+    name: Notify Deployment Status
+    needs: [deploy-web, deploy-admin, deploy-server]
+    if: always() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify success
+        if: needs.deploy-web.result == 'success' && needs.deploy-admin.result == 'success' && needs.deploy-server.result == 'success'
+        run: |
+          echo "🎉 All applications deployed successfully!"
+          echo "Web App: https://findhub.example.com"
+          echo "Admin App: https://admin.findhub.example.com"
+          echo "API Server: https://api.findhub.example.com"
+
+      - name: Notify failure
+        if: needs.deploy-web.result == 'failure' || needs.deploy-admin.result == 'failure' || needs.deploy-server.result == 'failure'
+        run: |
+          echo "❌ One or more deployments failed!"
+          echo "Web App: ${{ needs.deploy-web.result }}"
+          echo "Admin App: ${{ needs.deploy-admin.result }}"
+          echo "Server: ${{ needs.deploy-server.result }}"
+          exit 1

@@ -21,13 +21,17 @@ export const createItemSchema = z.object({
 		.min(3, "Location must be at least 3 characters")
 		.max(255),
 	dateFound: z.coerce.date(),
-	image: z
-		.file()
-		.max(5 * 1024 * 1024, "Image must be less than 5MB")
-		.mime(
-			["image/jpeg", "image/png", "image/webp"],
-			"Image must be JPEG, PNG, or WebP format",
+	images: z
+		.array(
+			z
+				.file()
+				.max(5 * 1024 * 1024, "Each image must be less than 5MB")
+				.mime(
+					["image/jpeg", "image/png", "image/webp"],
+					"Images must be JPEG, PNG, or WebP format",
+				),
 		)
+		.max(10, "Maximum 10 images allowed")
 		.optional(),
 	status: itemStatusSchema.optional(),
 });
@@ -54,5 +58,39 @@ export const statusUpdateSchema = z.object({
 });
 
 export const itemIdSchema = z.object({
+	id: z.coerce.number().int().positive(),
+});
+
+// Category schemas
+export const createCategorySchema = z.object({
+	name: z
+		.string()
+		.min(1, "Category name is required")
+		.max(100, "Category name must be less than 100 characters"),
+	description: z.string().optional(),
+});
+
+export const updateCategorySchema = createCategorySchema.partial();
+
+export const categoryIdSchema = z.object({
+	id: z.coerce.number().int().positive(),
+});
+// Image-specific schemas
+export const imageUploadSchema = z.object({
+	file: z
+		.file()
+		.max(5 * 1024 * 1024, "Image must be less than 5MB")
+		.mime(
+			["image/jpeg", "image/png", "image/webp"],
+			"Image must be JPEG, PNG, or WebP format",
+		),
+	displayOrder: z.coerce.number().int().min(0).default(0),
+});
+
+export const imageUpdateSchema = z.object({
+	displayOrder: z.coerce.number().int().min(0).optional(),
+});
+
+export const imageIdSchema = z.object({
 	id: z.coerce.number().int().positive(),
 });

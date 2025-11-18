@@ -1,4 +1,4 @@
-import { db, itemStatusHistory, lostItem } from "@findhub/db";
+import { db, itemImages, itemStatusHistories, lostItems } from "@findhub/db";
 import {
 	and,
 	desc,
@@ -11,11 +11,14 @@ import {
 } from "@findhub/db/drizzle-orm";
 import type { PaginatedResponse } from "@findhub/shared/types";
 import type {
+	ItemImage,
 	ItemStatus,
 	LostItem,
+	LostItemWithImages,
 	SearchFilters,
 	StatusHistoryEntry,
 } from "@findhub/shared/types/item";
+import { categoryService } from "./category.service";
 import { deleteItemImage, uploadItemImage } from "./upload.service";
 
 export interface CreateItemInput {
@@ -25,7 +28,7 @@ export interface CreateItemInput {
 	keywords?: string;
 	location: string;
 	dateFound: Date;
-	image?: File;
+	images?: File[];
 	createdById: string;
 }
 
@@ -36,8 +39,13 @@ export interface UpdateItemInput {
 	keywords?: string;
 	location?: string;
 	dateFound?: Date;
-	image?: File;
+	images?: File[];
 	status?: ItemStatus;
+}
+
+export interface ImageUploadInput {
+	file: File;
+	displayOrder?: number;
 }
 
 export interface StatusUpdateInput {
@@ -52,7 +60,7 @@ export class ItemsService {
 	 */
 	async searchItems(
 		filters: SearchFilters,
-	): Promise<PaginatedResponse<LostItem>> {
+	): Promise<PaginatedResponse<LostItemWithImages>> {
 		const {
 			keyword,
 			category,
@@ -72,9 +80,9 @@ export class ItemsService {
 			const keywordPattern = `%${keyword}%`;
 			conditions.push(
 				or(
-					ilike(lostItem.name, keywordPattern),
-					ilike(lostItem.description, keywordPattern),
-					ilike(lostItem.keywords, keywordPattern),
+					ilike(lostItems.name, keywordPattern),
+					ilike(lostItems.description, keywordPattern),
+					ilike(lostItems.keywords, keywordPattern),
 				),
 			);
 		}
@@ -85,27 +93,27 @@ export class ItemsService {
 			const categoryId =
 				typeof category === "string" ? Number.parseInt(category, 10) : category;
 			if (!Number.isNaN(categoryId)) {
-				conditions.push(eq(lostItem.categoryId, categoryId));
+				conditions.push(eq(lostItems.categoryId, categoryId));
 			}
 		}
 
 		// Location filter
 		if (location) {
-			conditions.push(ilike(lostItem.location, `%${location}%`));
+			conditions.push(ilike(lostItems.location, `%${location}%`));
 		}
 
 		// Status filter
 		if (status) {
-			conditions.push(eq(lostItem.status, status));
+			conditions.push(eq(lostItems.status, status));
 		}
 
 		// Date range filters
 		if (dateFrom) {
-			conditions.push(gte(lostItem.dateFound, dateFrom));
+			conditions.push(gte(lostItems.dateFound, dateFrom));
 		}
 
 		if (dateTo) {
-			conditions.push(lte(lostItem.dateFound, dateTo));
+			conditions.push(lte(lostItems.dateFound, dateTo));
 		}
 
 		// Combine all conditions
@@ -118,22 +126,50 @@ export class ItemsService {
 		const [items, countResult] = await Promise.all([
 			db
 				.select()
-				.from(lostItem)
+				.from(lostItems)
 				.where(whereClause)
-				.orderBy(desc(lostItem.createdAt))
+				.orderBy(desc(lostItems.createdAt))
 				.limit(pageSize)
 				.offset(offset),
 			db
 				.select({ count: sql<number>`count(*)::int` })
-				.from(lostItem)
+				.from(lostItems)
 				.where(whereClause),
 		]);
+
+		// Get images for all items
+		const itemIds = items.map((item) => item.id);
+		const images =
+			itemIds.length > 0
+				? await db
+						.select()
+						.from(itemImages)
+						.where(sql`${itemImages.itemId} = ANY(${itemIds})`)
+						.orderBy(itemImages.displayOrder)
+				: [];
+
+		// Group images by item ID
+		const imagesByItemId = images.reduce(
+			(acc, image) => {
+				const itemImages = acc[image.itemId] || [];
+				itemImages.push(image);
+				acc[image.itemId] = itemImages;
+				return acc;
+			},
+			{} as Record<number, ItemImage[]>,
+		);
+
+		// Combine items with their images
+		const itemsWithImages: LostItemWithImages[] = items.map((item) => ({
+			...item,
+			images: imagesByItemId[item.id] || [],
+		}));
 
 		const total = countResult[0]?.count || 0;
 		const totalPages = Math.ceil(total / pageSize);
 
 		return {
-			data: items,
+			data: itemsWithImages,
 			total,
 			page,
 			pageSize,
@@ -147,37 +183,81 @@ export class ItemsService {
 	async getItemById(id: number): Promise<LostItem | null> {
 		const items = await db
 			.select()
-			.from(lostItem)
-			.where(eq(lostItem.id, id))
+			.from(lostItems)
+			.where(eq(lostItems.id, id))
 			.limit(1);
 
 		return items[0] || null;
 	}
 
 	/**
-	 * Create a new lost item with optional image upload to Supabase Storage
+	 * Get a single item by ID with images
 	 */
-	async createItem(input: CreateItemInput): Promise<LostItem> {
-		let imageUrl: string | undefined;
-		let imageKey: string | undefined;
+	async getItemByIdWithImages(id: number): Promise<LostItemWithImages | null> {
+		const item = await this.getItemById(id);
 
-		// Upload image to Supabase Storage if provided
-		if (input.image) {
-			try {
-				const uploadResult = await uploadItemImage(input.image);
-				imageUrl = uploadResult.url;
-				imageKey = uploadResult.key;
-			} catch (error) {
-				// Re-throw with more context
+		if (!item) {
+			return null;
+		}
+
+		const images = await db
+			.select()
+			.from(itemImages)
+			.where(eq(itemImages.itemId, id))
+			.orderBy(itemImages.displayOrder);
+
+		return {
+			...item,
+			images,
+		};
+	}
+
+	/**
+	 * Create a new lost item with optional multiple image uploads to Supabase Storage
+	 */
+	async createItem(input: CreateItemInput): Promise<LostItemWithImages> {
+		// Validate category exists if provided
+		if (input.categoryId) {
+			const category = await categoryService.getCategoryById(input.categoryId);
+			if (!category) {
 				throw new Error(
-					`Failed to upload image: ${error instanceof Error ? error.message : "Unknown error"}`,
+					`Invalid category: Category with ID ${input.categoryId} does not exist`,
+				);
+			}
+		}
+
+		const uploadedImages: Array<{ url: string; key: string; file: File }> = [];
+
+		// Upload images to Supabase Storage if provided
+		if (input.images && input.images.length > 0) {
+			try {
+				for (const image of input.images) {
+					const uploadResult = await uploadItemImage(image);
+					uploadedImages.push({
+						url: uploadResult.url,
+						key: uploadResult.key,
+						file: image,
+					});
+				}
+			} catch (error) {
+				// Cleanup any uploaded images if upload fails
+				for (const uploaded of uploadedImages) {
+					try {
+						await deleteItemImage(uploaded.key);
+					} catch (cleanupError) {
+						console.error("Failed to cleanup uploaded image:", cleanupError);
+					}
+				}
+				throw new Error(
+					`Failed to upload images: ${error instanceof Error ? error.message : "Unknown error"}`,
 				);
 			}
 		}
 
 		try {
+			// Create the item first
 			const [item] = await db
-				.insert(lostItem)
+				.insert(lostItems)
 				.values({
 					name: input.name,
 					description: input.description,
@@ -185,8 +265,6 @@ export class ItemsService {
 					keywords: input.keywords,
 					location: input.location,
 					dateFound: input.dateFound,
-					imageUrl,
-					imageKey,
 					createdById: input.createdById,
 					status: "unclaimed",
 				})
@@ -196,14 +274,38 @@ export class ItemsService {
 				throw new Error("Failed to create item");
 			}
 
-			return item;
+			// Insert images if any were uploaded
+			const images: ItemImage[] = [];
+			if (uploadedImages.length > 0) {
+				const imageInserts = uploadedImages.map((uploaded, index) => ({
+					itemId: item.id,
+					url: uploaded.url,
+					key: uploaded.key,
+					filename: uploaded.file.name,
+					mimeType: uploaded.file.type,
+					size: uploaded.file.size,
+					displayOrder: index,
+					uploadedById: input.createdById,
+				}));
+
+				const insertedImages = await db
+					.insert(itemImages)
+					.values(imageInserts)
+					.returning();
+
+				images.push(...insertedImages);
+			}
+
+			return {
+				...item,
+				images,
+			};
 		} catch (error) {
-			// Cleanup uploaded image if database insert fails
-			if (imageKey) {
+			// Cleanup uploaded images if database insert fails
+			for (const uploaded of uploadedImages) {
 				try {
-					await deleteItemImage(imageKey);
+					await deleteItemImage(uploaded.key);
 				} catch (cleanupError) {
-					// Log cleanup error but don't throw - the main error is more important
 					console.error("Failed to cleanup uploaded image:", cleanupError);
 				}
 			}
@@ -212,82 +314,175 @@ export class ItemsService {
 	}
 
 	/**
+	 * Add images to an existing item
+	 */
+	async addItemImages(
+		itemId: number,
+		images: File[],
+		uploadedById: string,
+	): Promise<ItemImage[]> {
+		// Verify item exists
+		const item = await this.getItemById(itemId);
+		if (!item) {
+			throw new Error("Item not found");
+		}
+
+		// Get current max display order
+		const [maxOrderResult] = await db
+			.select({ maxOrder: sql<number>`COALESCE(MAX(display_order), -1)` })
+			.from(itemImages)
+			.where(eq(itemImages.itemId, itemId));
+
+		const currentMaxOrder = maxOrderResult?.maxOrder ?? -1;
+
+		const uploadedImages: Array<{ url: string; key: string; file: File }> = [];
+
+		try {
+			// Upload all images first
+			for (const image of images) {
+				const uploadResult = await uploadItemImage(image);
+				uploadedImages.push({
+					url: uploadResult.url,
+					key: uploadResult.key,
+					file: image,
+				});
+			}
+
+			// Insert image records
+			const imageInserts = uploadedImages.map((uploaded, index) => ({
+				itemId,
+				url: uploaded.url,
+				key: uploaded.key,
+				filename: uploaded.file.name,
+				mimeType: uploaded.file.type,
+				size: uploaded.file.size,
+				displayOrder: currentMaxOrder + index + 1,
+				uploadedById,
+			}));
+
+			const insertedImages = await db
+				.insert(itemImages)
+				.values(imageInserts)
+				.returning();
+
+			return insertedImages;
+		} catch (error) {
+			// Cleanup uploaded images if database insert fails
+			for (const uploaded of uploadedImages) {
+				try {
+					await deleteItemImage(uploaded.key);
+				} catch (cleanupError) {
+					console.error("Failed to cleanup uploaded image:", cleanupError);
+				}
+			}
+			throw error;
+		}
+	}
+
+	/**
+	 * Delete an image from an item
+	 */
+	async deleteItemImage(imageId: number): Promise<boolean> {
+		// Get image details for cleanup
+		const [image] = await db
+			.select()
+			.from(itemImages)
+			.where(eq(itemImages.id, imageId))
+			.limit(1);
+
+		if (!image) {
+			return false;
+		}
+
+		try {
+			// Delete from database first
+			await db.delete(itemImages).where(eq(itemImages.id, imageId));
+
+			// Delete from storage
+			if (image.key) {
+				try {
+					await deleteItemImage(image.key);
+				} catch (storageError) {
+					console.error("Failed to delete image from storage:", storageError);
+					// Don't fail the operation if storage cleanup fails
+				}
+			}
+
+			return true;
+		} catch (error) {
+			console.error("Failed to delete image:", error);
+			return false;
+		}
+	}
+
+	/**
+	 * Update image display order
+	 */
+	async updateImageOrder(
+		imageId: number,
+		displayOrder: number,
+	): Promise<ItemImage | null> {
+		const [updatedImage] = await db
+			.update(itemImages)
+			.set({ displayOrder, updatedAt: new Date() })
+			.where(eq(itemImages.id, imageId))
+			.returning();
+
+		return updatedImage || null;
+	}
+
+	/**
 	 * Update an existing item with optional image replacement
 	 */
 	async updateItem(
 		id: number,
 		input: UpdateItemInput,
-	): Promise<LostItem | null> {
-		// Get current item to access old image key
+	): Promise<LostItemWithImages | null> {
+		// Get current item
 		const currentItem = await this.getItemById(id);
 
 		if (!currentItem) {
 			return null;
 		}
 
-		let imageUrl: string | undefined;
-		let imageKey: string | undefined;
-		let oldImageKey: string | undefined;
-
-		// Handle image replacement if new image provided
-		if (input.image) {
-			try {
-				// Upload new image
-				const uploadResult = await uploadItemImage(input.image);
-				imageUrl = uploadResult.url;
-				imageKey = uploadResult.key;
-
-				// Store old image key for cleanup after successful update
-				oldImageKey = currentItem.imageKey || undefined;
-			} catch (error) {
+		// Validate category exists if provided
+		if (input.categoryId !== undefined && input.categoryId !== null) {
+			const category = await categoryService.getCategoryById(input.categoryId);
+			if (!category) {
 				throw new Error(
-					`Failed to upload new image: ${error instanceof Error ? error.message : "Unknown error"}`,
+					`Invalid category: Category with ID ${input.categoryId} does not exist`,
 				);
 			}
 		}
 
 		try {
-			// Prepare update data
+			// Prepare update data (exclude images as they're handled separately)
 			const updateData: Record<string, unknown> = {
 				...input,
 				updatedAt: new Date(),
 			};
 
-			// Remove the image field from update data (it's a File object, not a DB field)
-			delete updateData.image;
-
-			// Add new image URL and key if uploaded
-			if (imageUrl && imageKey) {
-				updateData.imageUrl = imageUrl;
-				updateData.imageKey = imageKey;
-			}
+			// Remove the images field from update data (it's a File array, not a DB field)
+			delete updateData.images;
 
 			const [item] = await db
-				.update(lostItem)
+				.update(lostItems)
 				.set(updateData)
-				.where(eq(lostItem.id, id))
+				.where(eq(lostItems.id, id))
 				.returning();
 
-			// Delete old image from Supabase Storage if update was successful and new image was uploaded
-			if (item && oldImageKey) {
-				try {
-					await deleteItemImage(oldImageKey);
-				} catch (cleanupError) {
-					// Log cleanup error but don't throw - the update was successful
-					console.error("Failed to delete old image:", cleanupError);
-				}
+			if (!item) {
+				return null;
 			}
 
-			return item || null;
-		} catch (error) {
-			// Cleanup newly uploaded image if database update fails
-			if (imageKey) {
-				try {
-					await deleteItemImage(imageKey);
-				} catch (cleanupError) {
-					console.error("Failed to cleanup uploaded image:", cleanupError);
-				}
+			// Handle new images if provided
+			if (input.images && input.images.length > 0) {
+				await this.addItemImages(id, input.images, item.createdById);
 			}
+
+			// Return item with images
+			return await this.getItemByIdWithImages(id);
+		} catch (error) {
 			throw error;
 		}
 	}
@@ -308,12 +503,12 @@ export class ItemsService {
 
 		// Update item status
 		const [updatedItem] = await db
-			.update(lostItem)
+			.update(lostItems)
 			.set({
 				status: statusUpdate.status,
 				updatedAt: new Date(),
 			})
-			.where(eq(lostItem.id, id))
+			.where(eq(lostItems.id, id))
 			.returning();
 
 		if (!updatedItem) {
@@ -321,7 +516,7 @@ export class ItemsService {
 		}
 
 		// Create status history entry
-		await db.insert(itemStatusHistory).values({
+		await db.insert(itemStatusHistories).values({
 			itemId: id,
 			previousStatus: currentItem.status,
 			newStatus: statusUpdate.status,
@@ -338,9 +533,9 @@ export class ItemsService {
 	async getItemStatusHistory(itemId: number): Promise<StatusHistoryEntry[]> {
 		const history = await db
 			.select()
-			.from(itemStatusHistory)
-			.where(eq(itemStatusHistory.itemId, itemId))
-			.orderBy(desc(itemStatusHistory.changedAt));
+			.from(itemStatusHistories)
+			.where(eq(itemStatusHistories.itemId, itemId))
+			.orderBy(desc(itemStatusHistories.createdAt));
 
 		return history;
 	}
@@ -349,8 +544,8 @@ export class ItemsService {
 	 * Soft delete an item (mark as archived) and cleanup Supabase Storage
 	 */
 	async deleteItem(id: number, userId: string): Promise<boolean> {
-		// Get current item to access image key
-		const currentItem = await this.getItemById(id);
+		// Get current item with images
+		const currentItem = await this.getItemByIdWithImages(id);
 
 		if (!currentItem) {
 			return false;
@@ -367,16 +562,18 @@ export class ItemsService {
 			return false;
 		}
 
-		// Delete image from Supabase Storage if exists
-		if (currentItem.imageKey) {
-			try {
-				await deleteItemImage(currentItem.imageKey);
-			} catch (error) {
-				// Log error but don't fail the delete operation
-				console.error(
-					`Failed to delete image for item ${id}:`,
-					error instanceof Error ? error.message : "Unknown error",
-				);
+		// Delete all images from Supabase Storage
+		if (currentItem.images && currentItem.images.length > 0) {
+			for (const image of currentItem.images) {
+				try {
+					await deleteItemImage(image.key);
+				} catch (error) {
+					// Log error but don't fail the delete operation
+					console.error(
+						`Failed to delete image ${image.id} for item ${id}:`,
+						error instanceof Error ? error.message : "Unknown error",
+					);
+				}
 			}
 		}
 
@@ -390,12 +587,12 @@ export class ItemsService {
 		const [stats] = await db
 			.select({
 				total: sql<number>`count(*)::int`,
-				unclaimed: sql<number>`count(*) filter (where ${lostItem.status} = 'unclaimed')::int`,
-				claimed: sql<number>`count(*) filter (where ${lostItem.status} = 'claimed')::int`,
-				returned: sql<number>`count(*) filter (where ${lostItem.status} = 'returned')::int`,
+				unclaimed: sql<number>`count(*) filter (where ${lostItems.status} = 'unclaimed')::int`,
+				claimed: sql<number>`count(*) filter (where ${lostItems.status} = 'claimed')::int`,
+				returned: sql<number>`count(*) filter (where ${lostItems.status} = 'returned')::int`,
 			})
-			.from(lostItem)
-			.where(sql`${lostItem.status} != 'archived'`);
+			.from(lostItems)
+			.where(sql`${lostItems.status} != 'archived'`);
 
 		return stats;
 	}

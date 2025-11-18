@@ -1,0 +1,27 @@
+{
+	"version": "7",
+	"dialect": "postgresql",
+	"entries": [
+		{
+			"idx": 0,
+			"version": "7",
+			"when": 1763451485659,
+			"tag": "0000_lethal_leopardon",
+			"breakpoints": true
+		},
+		{
+			"idx": 1,
+			"version": "7",
+			"when": 1763466850425,
+			"tag": "0002_rename_tables_to_plural",
+			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "7",
+			"when": 1763468000000,
+			"tag": "0003_add_multiple_images_support",
+			"breakpoints": true
+		}
+	]
+}

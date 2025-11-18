@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test.describe("Admin User Flow", () => {
 	test.beforeEach(async ({ page }) => {
 		// Navigate to admin login page
-		await page.goto("/admin/login");
+		await page.goto("/login");
 	});
 
 	test("should complete login → create → update → delete flow", async ({
@@ -15,12 +15,12 @@ test.describe("Admin User Flow", () => {
 		await page.click('button[type="submit"]');
 
 		// Wait for redirect to admin dashboard
-		await page.waitForURL(/\/admin\/dashboard/, { timeout: 10000 });
-		await expect(page).toHaveURL(/\/admin\/dashboard/);
+		await page.waitForURL(/\/dashboard/, { timeout: 10000 });
+		await expect(page).toHaveURL(/\/dashboard/);
 
 		// Navigate to create new item page
-		await page.click('a[href="/admin/items/new"]');
-		await expect(page).toHaveURL(/\/admin\/items\/new/);
+		await page.click('a[href="/items/new"]');
+		await expect(page).toHaveURL(/\/items\/new/);
 
 		// Fill out the item form
 		const timestamp = Date.now();
@@ -38,7 +38,7 @@ test.describe("Admin User Flow", () => {
 		await page.click('button[type="submit"]');
 
 		// Wait for redirect back to dashboard
-		await page.waitForURL(/\/admin\/dashboard/, { timeout: 10000 });
+		await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 
 		// Verify success message
 		await expect(page.locator("text=/created successfully/i")).toBeVisible({
@@ -57,7 +57,7 @@ test.describe("Admin User Flow", () => {
 			.click();
 
 		// Wait for edit page
-		await page.waitForURL(/\/admin\/items\/\d+\/edit/);
+		await page.waitForURL(/\/items\/\d+\/edit/);
 
 		// Update the item
 		await page.fill(
@@ -67,7 +67,7 @@ test.describe("Admin User Flow", () => {
 		await page.click('button[type="submit"]');
 
 		// Wait for redirect
-		await page.waitForURL(/\/admin\/dashboard/, { timeout: 10000 });
+		await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 
 		// Verify update success
 		await expect(page.locator("text=/updated successfully/i")).toBeVisible({
@@ -99,10 +99,10 @@ test.describe("Admin User Flow", () => {
 		await page.fill('input[type="password"]', "password123");
 		await page.click('button[type="submit"]');
 
-		await page.waitForURL(/\/admin\/dashboard/, { timeout: 10000 });
+		await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 
 		// Navigate to create new item
-		await page.goto("/admin/items/new");
+		await page.goto("/items/new");
 
 		// Try to submit empty form
 		await page.click('button[type="submit"]');
@@ -113,28 +113,24 @@ test.describe("Admin User Flow", () => {
 
 	test("should redirect unauthenticated users to login", async ({ page }) => {
 		// Try to access admin dashboard without authentication
-		await page.goto("/admin/dashboard");
+		await page.goto("/dashboard");
 
 		// Should redirect to admin login
-		await page.waitForURL(/\/admin\/login/, { timeout: 10000 });
-		await expect(page).toHaveURL(/\/admin\/login/);
+		await page.waitForURL(/\/login/, { timeout: 10000 });
+		await expect(page).toHaveURL(/\/login/);
 	});
 
 	test("should verify admin routes are properly protected", async ({
 		page,
 	}) => {
 		// Test multiple admin routes without authentication
-		const protectedRoutes = [
-			"/admin/dashboard",
-			"/admin/items/new",
-			"/admin/items/1/edit",
-		];
+		const protectedRoutes = ["/dashboard", "/items/new", "/items/1/edit"];
 
 		for (const route of protectedRoutes) {
 			await page.goto(route);
 			// Should redirect to login
-			await page.waitForURL(/\/admin\/login/, { timeout: 10000 });
-			await expect(page).toHaveURL(/\/admin\/login/);
+			await page.waitForURL(/\/login/, { timeout: 10000 });
+			await expect(page).toHaveURL(/\/login/);
 		}
 	});
 });

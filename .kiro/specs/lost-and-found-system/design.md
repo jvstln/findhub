@@ -42,8 +42,8 @@ graph TB
     subgraph "Data Layer"
         S[Drizzle ORM]
         T[(PostgreSQL)]
-        U[Better Auth Tables]
-        V[Lost Items Table]
+        U[Better Auth Tables: users, sessions, accounts, verifications]
+        V[Lost Items Tables: lost_items, item_categories, item_images, item_status_histories]
         W[Audit Logs Table]
     end
 
@@ -238,9 +238,39 @@ apps/server/src/
 
 ```
 packages/db/src/schema/
-├── auth.ts                       # Existing Better Auth tables
-└── items.ts                      # New lost items schema
+├── auth.ts                       # Better Auth tables: users, sessions, accounts, verifications
+├── items.ts                      # Lost items schema: lost_items, item_categories, item_images, item_status_histories
+└── schema.ts                     # Shared utilities: timestamps helper
 ```
+
+#### Complete Database Tables
+
+**Authentication Tables (Better Auth):**
+- `users` - User accounts (id, name, email, email_verified, image, created_at, updated_at)
+- `sessions` - User sessions (id, expires_at, token, created_at, updated_at, ip_address, user_agent, user_id)
+- `accounts` - OAuth accounts (id, account_id, provider_id, user_id, access_token, refresh_token, etc.)
+- `verifications` - Email verifications (id, identifier, value, expires_at, created_at, updated_at)
+
+**Lost Items Tables:**
+- `lost_items` - Main items table (id, name, description, category_id, keywords, location, date_found, status, created_by_id, created_at, updated_at)
+- `item_images` - Multiple images per item (id, item_id, url, key, filename, mime_type, size, display_order, uploaded_by_id, created_at, updated_at)
+- `item_categories` - Item categories (id, name, description, created_at, updated_at)
+- `item_status_histories` - Status change audit trail (id, item_id, previous_status, new_status, changed_by_id, notes, created_at, updated_at)
+
+**Enums:**
+- `item_status` - Status values: "unclaimed", "claimed", "returned", "archived"
+
+**Key Relationships:**
+- `lost_items.category_id` → `item_categories.id`
+- `lost_items.created_by_id` → `users.id`
+- `item_images.item_id` → `lost_items.id`
+- `item_images.uploaded_by_id` → `users.id`
+- `item_status_histories.item_id` → `lost_items.id`
+- `item_status_histories.changed_by_id` → `users.id`
+
+**Indexes:**
+- `lost_items`: status, category_id, date_found, created_at
+- `item_images`: item_id, (item_id, display_order)
 
 ## Data Models
 
@@ -248,37 +278,87 @@ packages/db/src/schema/
 
 ```typescript
 // packages/db/src/schema/items.ts
-import { pgTable, text, timestamp, varchar, serial } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, varchar, serial, integer, pgEnum, index } from "drizzle-orm/pg-core";
 
-export const lostItem = pgTable("lost_item", {
-  id: serial().primaryKey(),
-  name: varchar(, { length: 255 }).notNull(),
-  description: text().notNull(),
-  category: varchar(, { length: 100 }).notNull(),
-  location: varchar(, { length: 255 }).notNull(),
-  dateFound: timestamp().notNull(),
-  status: varchar(, { length: 50 }).notNull().default("unclaimed"),
-  imageUrl: text(), // Supabase Storage public URL
-  imageKey: text(), // Supabase Storage file path for deletion
-  createdById: text()
+export const itemStatusEnum = pgEnum("item_status", [
+  "unclaimed",
+  "claimed", 
+  "returned",
+  "archived",
+]);
+
+// Complete database schema with all tables and columns
+
+export const itemStatusEnum = pgEnum("item_status", [
+  "unclaimed",
+  "claimed", 
+  "returned",
+  "archived",
+]);
+
+export const lostItems = pgTable("lost_items", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  categoryId: integer("category_id").references(() => itemCategories.id),
+  keywords: text("keywords"),
+  location: varchar("location", { length: 255 }).notNull(),
+  dateFound: timestamp("date_found").notNull(),
+  status: itemStatusEnum("status").notNull().default("unclaimed"),
+  createdById: text("created_by_id")
     .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  createdAt: timestamp().notNull().defaultNow(),
-  updatedAt: timestamp().notNull().defaultNow(),
+    .references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  index("lost_items_status_idx").on(table.status),
+  index("lost_items_category_idx").on(table.categoryId),
+  index("lost_items_date_found_idx").on(table.dateFound),
+  index("lost_items_created_at_idx").on(table.createdAt),
+]);
+
+export const itemImages = pgTable("item_images", {
+  id: serial("id").primaryKey(),
+  itemId: integer("item_id")
+    .notNull()
+    .references(() => lostItems.id, { onDelete: "cascade" }),
+  url: text("url").notNull(), // Supabase Storage public URL
+  key: text("key").notNull(), // Supabase Storage file path for deletion
+  filename: varchar("filename", { length: 255 }).notNull(),
+  mimeType: varchar("mime_type", { length: 100 }).notNull(),
+  size: integer("size").notNull(), // File size in bytes
+  displayOrder: integer("display_order").notNull().default(0),
+  uploadedById: text("uploaded_by_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  index("item_images_item_id_idx").on(table.itemId),
+  index("item_images_display_order_idx").on(table.itemId, table.displayOrder),
+]);
+
+export const itemCategories = pgTable("item_categories", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const itemStatusHistory = pgTable("item_status_history", {
-  id: serial().primaryKey(),
-  itemId: serial()
+export const itemStatusHistories = pgTable("item_status_histories", {
+  id: serial("id").primaryKey(),
+  itemId: integer("item_id")
     .notNull()
-    .references(() => lostItem.id, { onDelete: "cascade" }),
-  previousStatus: varchar({length: 50 }).notNull(),
-  newStatus: varchar({ length: 50 }).notNull(),
-  changedById: text()
+    .references(() => lostItems.id, { onDelete: "cascade" }),
+  previousStatus: itemStatusEnum("previous_status").notNull(),
+  newStatus: itemStatusEnum("new_status").notNull(),
+  changedById: text("changed_by_id")
     .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  changedAt: timestamp().notNull().defaultNow(),
-  notes: text(),
+    .references(() => users.id, { onDelete: "cascade" }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 ```
 
@@ -306,13 +386,30 @@ export interface LostItem {
   location: string;
   dateFound: Date;
   status: ItemStatus;
-  imageUrl: string | null;
   createdById: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface ItemWithHistory extends LostItem {
+export interface ItemImage {
+  id: number;
+  itemId: number;
+  url: string;
+  key: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+  displayOrder: number;
+  uploadedById: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface LostItemWithImages extends LostItem {
+  images: ItemImage[];
+}
+
+export interface LostItemWithImagesAndHistory extends LostItemWithImages {
   statusHistory: StatusHistoryEntry[];
 }
 
@@ -322,8 +419,9 @@ export interface StatusHistoryEntry {
   previousStatus: ItemStatus;
   newStatus: ItemStatus;
   changedById: string;
-  changedAt: Date;
   notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface SearchFilters {
@@ -366,14 +464,36 @@ export const itemCategorySchema = z.enum([
 export const createItemSchema = z.object({
   name: z.string().min(3).max(255),
   description: z.string().min(10).max(2000),
-  category: itemCategorySchema,
+  category: z.string().min(1, "Category is required"),
+  keywords: z.string().optional(),
   location: z.string().min(3).max(255),
   dateFound: z.coerce.date(),
-  image: z.instanceof(File).optional(),
+  images: z
+    .array(
+      z
+        .file()
+        .max(5 * 1024 * 1024, "Each image must be less than 5MB")
+        .mime(
+          ["image/jpeg", "image/png", "image/webp"],
+          "Images must be JPEG, PNG, or WebP format",
+        ),
+    )
+    .max(10, "Maximum 10 images allowed")
+    .optional(),
+  status: itemStatusSchema.optional(),
 });
 
-export const updateItemSchema = createItemSchema.partial().extend({
-  status: itemStatusSchema.optional(),
+export const updateItemSchema = createItemSchema.partial();
+
+export const imageUploadSchema = z.object({
+  file: z
+    .file()
+    .max(5 * 1024 * 1024, "Image must be less than 5MB")
+    .mime(
+      ["image/jpeg", "image/png", "image/webp"],
+      "Image must be JPEG, PNG, or WebP format",
+    ),
+  displayOrder: z.coerce.number().int().min(0).default(0),
 });
 
 export const searchFiltersSchema = z.object({
@@ -395,28 +515,39 @@ export const searchFiltersSchema = z.object({
 ```typescript
 // GET /api/items
 // Query params: keyword, category, location, status, dateFrom, dateTo, page, pageSize
-// Response: PaginatedResponse<LostItem>
+// Response: PaginatedResponse<LostItemWithImages>
 
 // GET /api/items/:id
-// Response: LostItem
+// Response: LostItemWithImages
 ```
 
 ### Protected Endpoints (Admin Only)
 
 ```typescript
 // POST /api/items
-// Body: FormData with item fields + image file
-// Response: LostItem
+// Body: FormData with item fields + multiple image files
+// Response: LostItemWithImages
 
 // PATCH /api/items/:id
-// Body: Partial item fields (including status)
-// Response: LostItem
+// Body: Partial item fields (including status) + optional new images
+// Response: LostItemWithImages
 
 // DELETE /api/items/:id
 // Response: { success: boolean }
 
 // GET /api/items/:id/history
 // Response: StatusHistoryEntry[]
+
+// POST /api/items/:id/images
+// Body: FormData with multiple image files
+// Response: ItemImage[]
+
+// DELETE /api/items/:id/images/:imageId
+// Response: { success: boolean }
+
+// PATCH /api/items/:id/images/:imageId
+// Body: { displayOrder: number }
+// Response: ItemImage
 ```
 
 ### Authentication Endpoints (Better Auth)
@@ -456,19 +587,20 @@ export const searchFiltersSchema = z.object({
 
 ## File Upload Strategy (Supabase Storage)
 
-### Image Upload Flow
+### Multiple Images Upload Flow
 
-1. **Frontend**: User selects image in form
-2. **Validation**: Client validates file size (max 5MB) and type (JPEG, PNG, WebP)
-3. **Upload**: FormData sent to backend with multipart/form-data
+1. **Frontend**: User selects multiple images in form (up to 10 images)
+2. **Validation**: Client validates each file size (max 5MB) and type (JPEG, PNG, WebP)
+3. **Upload**: FormData sent to backend with multipart/form-data containing multiple files
 4. **Backend Processing**:
-   - Validate file again on server
-   - Generate unique filename: `{uuid}.{ext}`
-   - Upload to Supabase Storage bucket "lost-items" using Supabase client
-   - Get public URL from Supabase
-   - Store public URL and file path in database
+   - Validate each file again on server
+   - Generate unique filename for each: `{uuid}.{ext}`
+   - Upload each to Supabase Storage bucket "lost-items" using Supabase client
+   - Get public URL from Supabase for each image
+   - Store image metadata in item_images table with display order
 5. **Serving**: Images served directly from Supabase CDN via public URLs
-6. **Deletion**: When item deleted, remove file from Supabase Storage using stored imageKey
+6. **Management**: Images can be reordered, added, or deleted individually
+7. **Deletion**: When item deleted, remove all associated files from Supabase Storage
 
 ### Supabase Storage Configuration
 
@@ -903,17 +1035,17 @@ try {
 
 ```typescript
 // Add indexes for common queries
-export const lostItem = pgTable(
-  "lost_item",
+export const lostItems = pgTable(
+  "lost_items",
   {
     // ... columns
   },
-  (table) => ({
-    statusIdx: index("status_idx").on(table.status),
-    categoryIdx: index("category_idx").on(table.category),
-    dateFoundIdx: index("date_found_idx").on(table.dateFound),
-    createdAtIdx: index("created_at_idx").on(table.createdAt),
-  })
+  (table) => [
+    index("lost_items_status_idx").on(table.status),
+    index("lost_items_category_idx").on(table.categoryId),
+    index("lost_items_date_found_idx").on(table.dateFound),
+    index("lost_items_created_at_idx").on(table.createdAt),
+  ]
 );
 ```
 

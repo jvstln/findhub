@@ -1,0 +1,89 @@
+# FindHub Docker Compose Configuration
+# For local development and testing with containerized applications
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: findhub-postgres
+    environment:
+      POSTGRES_DB: findhub
+      POSTGRES_USER: findhub
+      POSTGRES_PASSWORD: findhub_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U findhub"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # API Server
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    container_name: findhub-server
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=postgresql://findhub:findhub_password@postgres:5432/findhub
+      - BETTER_AUTH_SECRET=your-secret-key-here
+      - BETTER_AUTH_URL=http://localhost:3001
+      - CORS_ORIGIN=http://localhost:3001,http://localhost:3002
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Web Application (Public)
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: findhub-web
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:3000
+      - BETTER_AUTH_SECRET=your-secret-key-here
+      - BETTER_AUTH_URL=http://localhost:3001
+    ports:
+      - "3001:3000"
+    depends_on:
+      server:
+        condition: service_healthy
+
+  # Admin Application
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+    container_name: findhub-admin
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:3000
+      - NEXT_PUBLIC_ADMIN_MODE=true
+      - BETTER_AUTH_SECRET=your-secret-key-here
+      - BETTER_AUTH_URL=http://localhost:3002
+    ports:
+      - "3002:3000"
+    depends_on:
+      server:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+
+networks:
+  default:
+    name: findhub-network

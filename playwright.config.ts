@@ -17,8 +17,20 @@ export default defineConfig({
 
 	projects: [
 		{
-			name: "chromium",
-			use: { ...devices["Desktop Chrome"] },
+			name: "web",
+			use: {
+				...devices["Desktop Chrome"],
+				baseURL: "http://localhost:3001",
+			},
+			testMatch: /.*\/(public-flow|offline-functionality)\.spec\.ts/,
+		},
+		{
+			name: "admin",
+			use: {
+				...devices["Desktop Chrome"],
+				baseURL: "http://localhost:3002",
+			},
+			testMatch: /.*\/(admin-flow|status-workflow|file-upload)\.spec\.ts/,
 		},
 	],
 
@@ -32,6 +44,12 @@ export default defineConfig({
 		{
 			command: "cd apps/web && bun run dev",
 			url: "http://localhost:3001",
+			reuseExistingServer: !process.env.CI,
+			timeout: 120 * 1000,
+		},
+		{
+			command: "cd apps/admin && bun run dev",
+			url: "http://localhost:3002",
 			reuseExistingServer: !process.env.CI,
 			timeout: 120 * 1000,
 		},
