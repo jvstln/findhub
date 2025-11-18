@@ -19,7 +19,7 @@ const items = new Hono();
 items.get("/", zValidator("query", searchFiltersSchema), async (c) => {
 	try {
 		const filters = c.req.valid("query");
-		const result = await itemsService.searchItems(filters);
+		const result = await itemsService.getItems(filters);
 
 		return c.json({
 			success: true,

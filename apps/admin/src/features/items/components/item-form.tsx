@@ -1,7 +1,7 @@
 "use client";
 
 import { createItemSchema } from "@findhub/shared/schemas";
-import type { LostItem, NewItem } from "@findhub/shared/types/item";
+import type { LostItemWithImages, NewItem } from "@findhub/shared/types/item";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ImageIcon, Loader2Icon, XIcon } from "lucide-react";
 import Image from "next/image";
@@ -29,10 +29,10 @@ import { useCategories } from "@/features/categories/hooks/use-categories";
 
 // Create a form-specific schema that handles string inputs for date
 const formSchema = createItemSchema
-	.omit({ image: true, dateFound: true })
+	.omit({ images: true, dateFound: true })
 	.extend({
 		dateFound: z.string().min(1, "Date found is required"),
-		image: z.any().optional(),
+		images: z.any().optional(),
 	});
 
 type FormData = z.infer<typeof formSchema>;
@@ -41,7 +41,7 @@ interface ItemFormProps {
 	/**
 	 * Initial values for editing an existing item
 	 */
-	defaultValues?: Partial<LostItem>;
+	defaultValues?: Partial<LostItemWithImages>;
 	/**
 	 * Callback when form is submitted successfully
 	 */
@@ -68,7 +68,7 @@ export function ItemForm({
 	onCancel,
 }: ItemFormProps) {
 	const [imagePreview, setImagePreview] = useState<string | null>(
-		defaultValues?.imageUrl || null,
+		defaultValues?.images?.[0]?.url || null,
 	);
 	const { data: categories, isLoading: categoriesLoading } = useCategories();
 
@@ -94,46 +94,56 @@ export function ItemForm({
 		},
 	});
 
-	const imageFile = watch("image");
+	const imageFiles = watch("images");
 
 	// Update image preview when file changes
 	useEffect(() => {
-		if (imageFile instanceof File) {
+		if (imageFiles && imageFiles.length > 0 && imageFiles[0] instanceof File) {
 			const reader = new FileReader();
 			reader.onloadend = () => {
 				setImagePreview(reader.result as string);
 			};
-			reader.readAsDataURL(imageFile);
+			reader.readAsDataURL(imageFiles[0]);
 		}
-	}, [imageFile]);
+	}, [imageFiles]);
 
 	const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (file) {
-			// Validate file size (5MB)
-			if (file.size > 5 * 1024 * 1024) {
-				toast.error("Image must be less than 5MB");
+		const files = Array.from(e.target.files || []);
+		if (files.length > 0) {
+			// Validate each file
+			for (const file of files) {
+				// Validate file size (5MB)
+				if (file.size > 5 * 1024 * 1024) {
+					toast.error(`Image ${file.name} must be less than 5MB`);
+					e.target.value = "";
+					return;
+				}
+
+				// Validate file type
+				const validTypes = ["image/jpeg", "image/png", "image/webp"];
+				if (!validTypes.includes(file.type)) {
+					toast.error(`Image ${file.name} must be JPEG, PNG, or WebP format`);
+					e.target.value = "";
+					return;
+				}
+			}
+
+			// Limit to 10 images
+			if (files.length > 10) {
+				toast.error("Maximum 10 images allowed");
 				e.target.value = "";
 				return;
 			}
 
-			// Validate file type
-			const validTypes = ["image/jpeg", "image/png", "image/webp"];
-			if (!validTypes.includes(file.type)) {
-				toast.error("Image must be JPEG, PNG, or WebP format");
-				e.target.value = "";
-				return;
-			}
-
-			setValue("image", file, { shouldValidate: true });
+			setValue("images", files, { shouldValidate: true });
 		}
 	};
 
-	const handleRemoveImage = () => {
-		setValue("image", undefined);
+	const handleRemoveImages = () => {
+		setValue("images", undefined);
 		setImagePreview(null);
 		// Reset file input
-		const fileInput = document.getElementById("image") as HTMLInputElement;
+		const fileInput = document.getElementById("images") as HTMLInputElement;
 		if (fileInput) {
 			fileInput.value = "";
 		}
@@ -144,7 +154,9 @@ export function ItemForm({
 		const itemData: NewItem = {
 			...data,
 			dateFound: new Date(data.dateFound),
-			image: data.image instanceof File ? data.image : undefined,
+			images: Array.isArray(data.images)
+				? data.images.filter((file): file is File => file instanceof File)
+				: undefined,
 		};
 		await onSubmit(itemData);
 	};
@@ -263,9 +275,9 @@ export function ItemForm({
 				<FieldError>{errors.dateFound?.message}</FieldError>
 			</Field>
 
-			{/* Image Upload Field */}
-			<Field data-invalid={!!errors.image}>
-				<FieldLabel htmlFor="image">Item Image</FieldLabel>
+			{/* Images Upload Field */}
+			<Field data-invalid={!!errors.images}>
+				<FieldLabel htmlFor="images">Item Images</FieldLabel>
 				<div className="space-y-4">
 					{imagePreview ? (
 						<div className="relative w-full max-w-md">
@@ -282,17 +294,17 @@ export function ItemForm({
 								variant="destructive"
 								size="icon"
 								className="absolute top-2 right-2"
-								onClick={handleRemoveImage}
+								onClick={handleRemoveImages}
 								disabled={isLoading}
 							>
 								<XIcon />
-								<span className="sr-only">Remove image</span>
+								<span className="sr-only">Remove images</span>
 							</Button>
 						</div>
 					) : (
 						<div className="flex w-full max-w-md items-center justify-center">
 							<label
-								htmlFor="image"
+								htmlFor="images"
 								className="flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-muted-foreground/25 border-dashed bg-muted/50 transition-colors hover:border-muted-foreground/50 hover:bg-muted"
 							>
 								<div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -302,12 +314,13 @@ export function ItemForm({
 										drag and drop
 									</p>
 									<p className="text-muted-foreground text-xs">
-										JPEG, PNG, or WebP (max 5MB)
+										JPEG, PNG, or WebP (max 5MB each, up to 10 images)
 									</p>
 								</div>
 								<input
-									id="image"
+									id="images"
 									type="file"
+									multiple
 									className="hidden"
 									accept="image/jpeg,image/png,image/webp"
 									onChange={handleImageChange}
@@ -318,9 +331,10 @@ export function ItemForm({
 					)}
 				</div>
 				<FieldDescription>
-					Upload a clear photo of the item to help with identification
+					Upload clear photos of the item to help with identification (up to 10
+					images)
 				</FieldDescription>
-				<FieldError>{errors.image?.message as string}</FieldError>
+				<FieldError>{errors.images?.message as string}</FieldError>
 			</Field>
 
 			{/* Form Actions */}

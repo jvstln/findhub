@@ -1,6 +1,9 @@
 "use client";
 
-import type { ItemStatus, LostItem } from "@findhub/shared/types/item";
+import type {
+	ItemStatus,
+	LostItemWithImages,
+} from "@findhub/shared/types/item";
 import {
 	ArrowUpDown,
 	Calendar,
@@ -56,10 +59,10 @@ type SortField = "name" | "category" | "dateFound" | "location" | "status";
 type SortDirection = "asc" | "desc";
 
 interface ItemTableProps {
-	items: LostItem[];
-	onEdit?: (item: LostItem) => void;
-	onDelete?: (item: LostItem) => void;
-	onStatusChange?: (item: LostItem, newStatus: ItemStatus) => void;
+	items: LostItemWithImages[];
+	onEdit?: (item: LostItemWithImages) => void;
+	onDelete?: (item: LostItemWithImages) => void;
+	onStatusChange?: (item: LostItemWithImages, newStatus: ItemStatus) => void;
 	className?: string;
 	emptyMessage?: string;
 	isLoading?: boolean;
@@ -78,7 +81,9 @@ export function ItemTable({
 	const [sortField, setSortField] = useState<SortField>("dateFound");
 	const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-	const [itemToDelete, setItemToDelete] = useState<LostItem | null>(null);
+	const [itemToDelete, setItemToDelete] = useState<LostItemWithImages | null>(
+		null,
+	);
 
 	// Sort items
 	const sortedItems = [...items].sort((a, b) => {
@@ -124,7 +129,7 @@ export function ItemTable({
 		}
 	};
 
-	const handleDeleteClick = (item: LostItem) => {
+	const handleDeleteClick = (item: LostItemWithImages) => {
 		setItemToDelete(item);
 		setDeleteDialogOpen(true);
 	};
@@ -137,7 +142,7 @@ export function ItemTable({
 		setItemToDelete(null);
 	};
 
-	const handleStatusChange = (item: LostItem, newStatus: string) => {
+	const handleStatusChange = (item: LostItemWithImages, newStatus: string) => {
 		if (onStatusChange) {
 			onStatusChange(item, newStatus as ItemStatus);
 		}
@@ -290,15 +295,20 @@ export function ItemTable({
 							{sortedItems.map((item) => (
 								<TableRow key={item.id}>
 									<TableCell>
-										{item.imageUrl ? (
+										{item.images && item.images.length > 0 ? (
 											<div className="relative size-16 overflow-hidden rounded-md">
 												<Image
-													src={item.imageUrl}
+													src={item.images[0].url}
 													alt={item.name}
 													fill
 													className="object-cover"
 													sizes="64px"
 												/>
+												{item.images.length > 1 && (
+													<div className="absolute right-0 bottom-0 rounded-tl-md bg-black/50 px-1 text-white text-xs">
+														+{item.images.length - 1}
+													</div>
+												)}
 											</div>
 										) : (
 											<div className="flex size-16 items-center justify-center rounded-md bg-muted">

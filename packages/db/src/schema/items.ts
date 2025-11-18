@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import {
 	index,
 	integer,
@@ -25,7 +26,7 @@ export const lostItems = pgTable(
 		name: varchar("name", { length: 255 }).notNull(),
 		description: text("description").notNull(),
 		categoryId: integer("category_id").references(() => itemCategories.id),
-		keywords: text("keywords"),
+		keywords: text("keywords").array(),
 		location: varchar("location", { length: 255 }).notNull(),
 		dateFound: timestamp("date_found").notNull(),
 		status: itemStatusEnum("status").notNull().default("unclaimed"),
@@ -86,6 +87,17 @@ export const itemStatusHistories = pgTable("item_status_histories", {
 	notes: text("notes"),
 	...timestamps,
 });
+
+export const lostItemsRelations = relations(lostItems, ({ many }) => ({
+	images: many(itemImages),
+}));
+
+export const imagesRelations = relations(itemImages, ({ one }) => ({
+	images: one(lostItems, {
+		fields: [itemImages.itemId],
+		references: [lostItems.id],
+	}),
+}));
 
 export type LostItem = typeof lostItems.$inferSelect;
 export type ItemImage = typeof itemImages.$inferSelect;

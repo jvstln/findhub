@@ -80,7 +80,7 @@ export default function SearchPage() {
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.4, delay: 0.1 }}
 				>
-					<SearchBar value={filters.keyword} onChange={setKeyword} />
+					<SearchBar value={filters.query} onChange={setKeyword} />
 				</motion.div>
 
 				{/* Main Content Grid */}

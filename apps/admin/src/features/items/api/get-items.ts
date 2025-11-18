@@ -1,5 +1,8 @@
 import type { PaginatedResponse } from "@findhub/shared/types";
-import type { LostItem, SearchFilters } from "@findhub/shared/types/item";
+import type {
+	LostItemWithImages,
+	SearchFilters,
+} from "@findhub/shared/types/item";
 import { get } from "@/lib/api-client";
 
 /**
@@ -9,11 +12,11 @@ import { get } from "@/lib/api-client";
  */
 export async function getItems(
 	filters?: SearchFilters,
-): Promise<PaginatedResponse<LostItem>> {
+): Promise<PaginatedResponse<LostItemWithImages>> {
 	const params = new URLSearchParams();
 
-	if (filters?.keyword) params.append("keyword", filters.keyword);
-	if (filters?.category) params.append("category", filters.category);
+	if (filters?.query) params.append("keyword", filters.query);
+	if (filters?.categoryId) params.append("category", filters.categoryId);
 	if (filters?.location) params.append("location", filters.location);
 	if (filters?.status) params.append("status", filters.status);
 	if (filters?.dateFrom)
@@ -25,5 +28,5 @@ export async function getItems(
 	const queryString = params.toString();
 	const url = `/api/items${queryString ? `?${queryString}` : ""}`;
 
-	return get<PaginatedResponse<LostItem>>(url);
+	return get<PaginatedResponse<LostItemWithImages>>(url);
 }

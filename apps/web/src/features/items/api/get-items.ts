@@ -12,8 +12,8 @@ export async function getItems(
 ): Promise<PaginatedResponse<LostItem>> {
 	const params = new URLSearchParams();
 
-	if (filters?.keyword) params.append("keyword", filters.keyword);
-	if (filters?.category) params.append("category", filters.category);
+	if (filters?.query) params.append("keyword", filters.query);
+	if (filters?.categoryId) params.append("category", filters.categoryId);
 	if (filters?.location) params.append("location", filters.location);
 	if (filters?.status) params.append("status", filters.status);
 	if (filters?.dateFrom)

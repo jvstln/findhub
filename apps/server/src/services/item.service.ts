@@ -9,6 +9,7 @@ import {
 	or,
 	sql,
 } from "@findhub/db/drizzle-orm";
+import { searchFiltersSchema } from "@findhub/shared/schemas";
 import type { PaginatedResponse } from "@findhub/shared/types";
 import type {
 	ItemImage,
@@ -18,6 +19,7 @@ import type {
 	SearchFilters,
 	StatusHistoryEntry,
 } from "@findhub/shared/types/item";
+import { getPaginatedMeta } from "@findhub/shared/utils";
 import { categoryService } from "./category.service";
 import { deleteItemImage, uploadItemImage } from "./upload.service";
 
@@ -55,45 +57,40 @@ export interface StatusUpdateInput {
 }
 
 export class ItemsService {
-	/**
-	 * Search and filter lost items with pagination
-	 */
-	async searchItems(
+	async getItems(
 		filters: SearchFilters,
 	): Promise<PaginatedResponse<LostItemWithImages>> {
 		const {
-			keyword,
-			category,
+			query,
+			categoryId,
 			location,
 			status,
 			dateFrom,
 			dateTo,
-			page = 1,
-			pageSize = 20,
-		} = filters;
+			page,
+			pageSize,
+		} = searchFiltersSchema.parse(filters);
 
 		// Build WHERE conditions
 		const conditions = [];
 
 		// Keyword search (name, description, or keywords)
-		if (keyword) {
-			const keywordPattern = `%${keyword}%`;
+		if (query) {
+			const queryPattern = `%${query}%`;
 			conditions.push(
 				or(
-					ilike(lostItems.name, keywordPattern),
-					ilike(lostItems.description, keywordPattern),
-					ilike(lostItems.keywords, keywordPattern),
+					ilike(lostItems.name, queryPattern),
+					ilike(lostItems.description, queryPattern),
+					sql`${queryPattern} ANY(${lostItems.keywords})`,
 				),
 			);
 		}
 
 		// Category filter
-		if (category) {
-			// Convert string to number if needed (category can be ID or name)
-			const categoryId =
-				typeof category === "string" ? Number.parseInt(category, 10) : category;
-			if (!Number.isNaN(categoryId)) {
-				conditions.push(eq(lostItems.categoryId, categoryId));
+		if (categoryId) {
+			const categoryIdAsNumber = Number.parseInt(categoryId, 10);
+			if (!Number.isNaN(categoryIdAsNumber)) {
+				conditions.push(eq(lostItems.categoryId, categoryIdAsNumber));
 			}
 		}
 
@@ -103,18 +100,11 @@ export class ItemsService {
 		}
 
 		// Status filter
-		if (status) {
-			conditions.push(eq(lostItems.status, status));
-		}
+		if (status) conditions.push(eq(lostItems.status, status));
 
 		// Date range filters
-		if (dateFrom) {
-			conditions.push(gte(lostItems.dateFound, dateFrom));
-		}
-
-		if (dateTo) {
-			conditions.push(lte(lostItems.dateFound, dateTo));
-		}
+		if (dateFrom) conditions.push(gte(lostItems.dateFound, dateFrom));
+		if (dateTo) conditions.push(lte(lostItems.dateFound, dateTo));
 
 		// Combine all conditions
 		const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -122,58 +112,25 @@ export class ItemsService {
 		// Calculate offset
 		const offset = (page - 1) * pageSize;
 
-		// Execute query with pagination
-		const [items, countResult] = await Promise.all([
-			db
-				.select()
-				.from(lostItems)
-				.where(whereClause)
-				.orderBy(desc(lostItems.createdAt))
-				.limit(pageSize)
-				.offset(offset),
-			db
-				.select({ count: sql<number>`count(*)::int` })
-				.from(lostItems)
-				.where(whereClause),
+		// Execute query with pagination using relational queries
+		const [items, total] = await Promise.all([
+			db.query.lostItems.findMany({
+				where: whereClause,
+				with: {
+					images: {
+						orderBy: (images, { asc }) => [asc(images.displayOrder)],
+					},
+				},
+				orderBy: (items, { desc }) => [desc(items.createdAt)],
+				limit: pageSize,
+				offset: offset,
+			}),
+			db.$count(lostItems, whereClause),
 		]);
 
-		// Get images for all items
-		const itemIds = items.map((item) => item.id);
-		const images =
-			itemIds.length > 0
-				? await db
-						.select()
-						.from(itemImages)
-						.where(sql`${itemImages.itemId} = ANY(${itemIds})`)
-						.orderBy(itemImages.displayOrder)
-				: [];
-
-		// Group images by item ID
-		const imagesByItemId = images.reduce(
-			(acc, image) => {
-				const itemImages = acc[image.itemId] || [];
-				itemImages.push(image);
-				acc[image.itemId] = itemImages;
-				return acc;
-			},
-			{} as Record<number, ItemImage[]>,
-		);
-
-		// Combine items with their images
-		const itemsWithImages: LostItemWithImages[] = items.map((item) => ({
-			...item,
-			images: imagesByItemId[item.id] || [],
-		}));
-
-		const total = countResult[0]?.count || 0;
-		const totalPages = Math.ceil(total / pageSize);
-
 		return {
-			data: itemsWithImages,
-			total,
-			page,
-			pageSize,
-			totalPages,
+			data: items,
+			...getPaginatedMeta({ total, pageSize }),
 		};
 	}
 
@@ -262,7 +219,7 @@ export class ItemsService {
 					name: input.name,
 					description: input.description,
 					categoryId: input.categoryId,
-					keywords: input.keywords,
+					keywords: input.keywords ? [input.keywords] : null,
 					location: input.location,
 					dateFound: input.dateFound,
 					createdById: input.createdById,

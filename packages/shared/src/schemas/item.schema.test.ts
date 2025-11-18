@@ -125,12 +125,12 @@ describe("searchFiltersSchema", () => {
 
 	test("should accept keyword filter", () => {
 		const result = searchFiltersSchema.parse({ keyword: "wallet" });
-		expect(result.keyword).toBe("wallet");
+		expect(result.query).toBe("wallet");
 	});
 
 	test("should accept category filter", () => {
 		const result = searchFiltersSchema.parse({ category: "electronics" });
-		expect(result.category).toBe("electronics");
+		expect(result.categoryId).toBe("electronics");
 	});
 
 	test("should accept location filter", () => {

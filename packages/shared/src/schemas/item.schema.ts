@@ -39,8 +39,8 @@ export const createItemSchema = z.object({
 export const updateItemSchema = createItemSchema.partial();
 
 export const searchFiltersSchema = z.object({
-	keyword: z.string().optional(),
-	category: z.string().optional(),
+	query: z.string().optional(),
+	categoryId: z.string().optional(),
 	location: z.string().optional(),
 	status: itemStatusSchema.optional(),
 	dateFrom: z.coerce.date().optional(),

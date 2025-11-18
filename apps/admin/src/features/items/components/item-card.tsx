@@ -1,4 +1,4 @@
-import type { LostItem } from "@findhub/shared/types/item";
+import type { LostItemWithImages } from "@findhub/shared/types/item";
 import { Calendar, MapPin } from "lucide-react";
 import { motion } from "motion/react";
 import Image from "next/image";
@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { StatusBadge } from "./status-badge";
 
 interface ItemCardProps {
-	item: LostItem;
+	item: LostItemWithImages;
 	onClick?: () => void;
 	className?: string;
 }
@@ -31,7 +31,7 @@ export function ItemCard({ item, onClick, className }: ItemCardProps) {
 				)}
 				onClick={onClick}
 			>
-				{item.imageUrl && (
+				{item.images && item.images.length > 0 && (
 					<div className="relative aspect-video w-full overflow-hidden rounded-t-xl">
 						<motion.div
 							whileHover={{ scale: 1.05 }}
@@ -39,13 +39,18 @@ export function ItemCard({ item, onClick, className }: ItemCardProps) {
 							className="size-full"
 						>
 							<Image
-								src={item.imageUrl}
+								src={item.images[0].url}
 								alt={item.name}
 								fill
 								className="object-cover"
 								sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
 							/>
 						</motion.div>
+						{item.images.length > 1 && (
+							<div className="absolute top-2 right-2 rounded-full bg-black/50 px-2 py-1 text-white text-xs">
+								+{item.images.length - 1}
+							</div>
+						)}
 					</div>
 				)}
 

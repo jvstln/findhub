@@ -1,4 +1,7 @@
-import type { ItemUpdate, LostItem } from "@findhub/shared/types/item";
+import type {
+	ItemUpdate,
+	LostItemWithImages,
+} from "@findhub/shared/types/item";
 import { patch, postFormData } from "@/lib/api-client";
 
 /**
@@ -10,9 +13,9 @@ import { patch, postFormData } from "@/lib/api-client";
 export async function updateItem(
 	id: number,
 	data: ItemUpdate,
-): Promise<LostItem> {
-	// If there's an image file, use FormData
-	if (data.image) {
+): Promise<LostItemWithImages> {
+	// If there are image files, use FormData
+	if (data.images && data.images.length > 0) {
 		const formData = new FormData();
 
 		if (data.name) formData.append("name", data.name);
@@ -23,11 +26,14 @@ export async function updateItem(
 			formData.append("dateFound", data.dateFound.toISOString());
 		if (data.keywords) formData.append("keywords", data.keywords);
 		if (data.status) formData.append("status", data.status);
-		if (data.image) formData.append("image", data.image);
+
+		for (const image of data.images) {
+			formData.append("images", image);
+		}
 
 		// Use POST with _method override or a different endpoint for multipart updates
 		// Since PATCH with FormData can be tricky, we'll use the postFormData helper
-		return postFormData<LostItem>(`/api/items/${id}`, formData);
+		return postFormData<LostItemWithImages>(`/api/items/${id}`, formData);
 	}
 
 	// Otherwise, use regular JSON PATCH
@@ -42,5 +48,5 @@ export async function updateItem(
 	if (data.keywords !== undefined) updateData.keywords = data.keywords;
 	if (data.status !== undefined) updateData.status = data.status;
 
-	return patch<LostItem>(`/api/items/${id}`, updateData);
+	return patch<LostItemWithImages>(`/api/items/${id}`, updateData);
 }

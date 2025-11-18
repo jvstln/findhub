@@ -3,8 +3,8 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { getQueryClient } from "@/lib/query-client";
+import { AdminLayout } from "./admin-layout";
 import { ThemeProvider } from "./theme-provider";
-import { SidebarProvider } from "./ui/sidebar";
 import { Toaster } from "./ui/sonner";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
@@ -18,10 +18,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 				enableSystem
 				disableTransitionOnChange
 			>
-				<SidebarProvider>
+				<AdminLayout>
 					{children}
 					<Toaster richColors />
-				</SidebarProvider>
+				</AdminLayout>
 			</ThemeProvider>
 			<ReactQueryDevtools initialIsOpen={false} />
 		</QueryClientProvider>

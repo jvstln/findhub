@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { authClient } from "./lib/auth-client";
 
 export default async function authMiddleware(request: NextRequest) {
 	const { pathname } = request.nextUrl;
@@ -13,30 +14,13 @@ export default async function authMiddleware(request: NextRequest) {
 
 	// Check authentication for all other routes
 	try {
-		const response = await fetch(
-			`${process.env.NEXT_PUBLIC_API_URL}/api/auth/get-session`,
-			{
-				headers: {
-					cookie: request.headers.get("cookie") || "",
-				},
+		const session = await authClient.getSession(undefined, {
+			headers: {
+				cookie: request.headers.get("cookie") || "",
 			},
-		);
+		});
 
-		if (!response.ok) {
-			// Redirect to login if not authenticated
-			const loginUrl = new URL("/login", request.url);
-			loginUrl.searchParams.set("from", pathname);
-			return NextResponse.redirect(loginUrl);
-		}
-
-		const session = await response.json();
-
-		if (!session?.user) {
-			// Redirect to login if no user in session
-			const loginUrl = new URL("/login", request.url);
-			loginUrl.searchParams.set("from", pathname);
-			return NextResponse.redirect(loginUrl);
-		}
+		if (session.error || !session.data?.user) throw new Error("Unauthorized");
 	} catch (error) {
 		console.error("Auth middleware error:", error);
 		// Redirect to login on error

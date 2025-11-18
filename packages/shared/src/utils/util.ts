@@ -16,6 +16,22 @@ export const capitalize = (
 		);
 };
 
+export const getPaginatedMeta = (
+	meta: { total?: number; pageSize?: number; page?: number } = {},
+) => {
+	const total = Math.max(meta.total || 0, 0);
+	const page = Math.max(meta.page || 1, 1);
+	const pageSize = Math.max(meta.pageSize || 1, 1);
+
+	return {
+		total,
+		pageSize,
+		page,
+		totalPages: Math.ceil(total / pageSize),
+		offset: (page - 1) * pageSize,
+	};
+};
+
 export const statuses = [
 	{
 		aliases: ["neutral"],

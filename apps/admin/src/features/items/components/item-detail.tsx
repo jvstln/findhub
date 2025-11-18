@@ -1,4 +1,4 @@
-import type { LostItem } from "@findhub/shared/types/item";
+import type { LostItemWithImages } from "@findhub/shared/types/item";
 import { Calendar, Clock, MapPin, Tag } from "lucide-react";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { formatItemDateLong, formatItemDateTime } from "@/lib/date-utils";
 import { StatusBadge } from "./status-badge";
 
 interface ItemDetailProps {
-	item: LostItem;
+	item: LostItemWithImages;
 	showClaimInstructions?: boolean;
 }
 
@@ -23,17 +23,37 @@ export function ItemDetail({
 
 	return (
 		<div className="space-y-6">
-			{/* Image Section */}
-			{item.imageUrl && (
-				<div className="relative aspect-video w-full overflow-hidden rounded-xl border">
-					<Image
-						src={item.imageUrl}
-						alt={item.name}
-						fill
-						className="object-contain"
-						sizes="(max-width: 768px) 100vw, (max-width: 1024px) 80vw, 60vw"
-						priority
-					/>
+			{/* Images Section */}
+			{item.images && item.images.length > 0 && (
+				<div className="space-y-4">
+					<div className="relative aspect-video w-full overflow-hidden rounded-xl border">
+						<Image
+							src={item.images[0].url}
+							alt={item.name}
+							fill
+							className="object-contain"
+							sizes="(max-width: 768px) 100vw, (max-width: 1024px) 80vw, 60vw"
+							priority
+						/>
+					</div>
+					{item.images.length > 1 && (
+						<div className="grid grid-cols-4 gap-2">
+							{item.images.slice(1).map((image, index) => (
+								<div
+									key={image.id}
+									className="relative aspect-square overflow-hidden rounded-lg border"
+								>
+									<Image
+										src={image.url}
+										alt={`${item.name} - Image ${index + 2}`}
+										fill
+										className="object-cover"
+										sizes="(max-width: 768px) 25vw, 150px"
+									/>
+								</div>
+							))}
+						</div>
+					)}
 				</div>
 			)}
 

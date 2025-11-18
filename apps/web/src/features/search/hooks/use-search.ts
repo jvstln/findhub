@@ -35,7 +35,7 @@ export function useSearch(
 	const setKeyword = useCallback((keyword: string) => {
 		setFilters((prev) => ({
 			...prev,
-			keyword: keyword.trim() || undefined,
+			query: keyword.trim() || undefined,
 			page: 1, // Reset to first page on filter change
 		}));
 	}, []);
@@ -43,7 +43,7 @@ export function useSearch(
 	const setCategory = useCallback((category: string | undefined) => {
 		setFilters((prev) => ({
 			...prev,
-			category,
+			categoryId: category,
 			page: 1,
 		}));
 	}, []);
@@ -101,8 +101,8 @@ export function useSearch(
 
 	const hasActiveFilters = useMemo(() => {
 		return !!(
-			filters.keyword ||
-			filters.category ||
+			filters.query ||
+			filters.categoryId ||
 			filters.location ||
 			filters.status ||
 			filters.dateFrom ||

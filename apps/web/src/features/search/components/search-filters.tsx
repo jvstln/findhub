@@ -90,7 +90,7 @@ export function SearchFilters({
 				<div className="space-y-2">
 					<Label htmlFor="category-filter">Category</Label>
 					<Select
-						value={filters.category || "all"}
+						value={filters.categoryId || "all"}
 						onValueChange={(value) =>
 							onCategoryChange(value === "all" ? undefined : value)
 						}
