@@ -2,11 +2,14 @@
 
 import type { ItemStatus, LostItem } from "@findhub/shared/types/item";
 import { Archive, Package, PackageCheck, PackageX } from "lucide-react";
-import { motion } from "motion/react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { PageHeader } from "@/components/layout/page-header";
+import { ErrorState } from "@/components/shared/error-state";
+import { FilterBar } from "@/components/shared/filter-bar";
+import { StatsCard } from "@/components/shared/stats-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Select,
@@ -15,7 +18,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { StatsCardSkeleton } from "@/components/ui/stats-card-skeleton";
 import { ItemTable } from "@/features/items/components/item-table";
 import {
@@ -99,33 +101,37 @@ export default function AdminDashboardPage() {
 		}
 	};
 
+	const handleClearFilters = () => {
+		setStatusFilter("all");
+		setCategoryFilter("all");
+	};
+
+	const hasActiveFilters = statusFilter !== "all" || categoryFilter !== "all";
+
 	if (error) {
 		return (
-			<div className="flex min-h-screen items-center justify-center">
-				<div className="text-center">
-					<p className="text-destructive text-lg">Failed to load items</p>
-					<p className="text-muted-foreground text-sm">
-						{error instanceof Error ? error.message : "Unknown error"}
-					</p>
-				</div>
-			</div>
+			<>
+				<PageHeader
+					title="Dashboard"
+					description="Manage lost and found items"
+				/>
+				<main className="flex-1 p-6">
+					<ErrorState
+						title="Failed to load items"
+						message={
+							error instanceof Error ? error.message : "Unknown error occurred"
+						}
+						onRetry={() => window.location.reload()}
+					/>
+				</main>
+			</>
 		);
 	}
 
 	return (
 		<div className="flex flex-1 flex-col">
-			{/* Header */}
-			<header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-6">
-				<SidebarTrigger />
-				<div className="flex-1">
-					<h1 className="font-bold text-2xl">Dashboard</h1>
-					<p className="text-muted-foreground text-sm">
-						Manage lost and found items
-					</p>
-				</div>
-			</header>
+			<PageHeader title="Dashboard" description="Manage lost and found items" />
 
-			{/* Main Content */}
 			<main className="flex-1 space-y-6 p-6">
 				{/* Statistics Cards */}
 				<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -138,142 +144,85 @@ export default function AdminDashboardPage() {
 						</>
 					) : (
 						<>
-							<motion.div
-								initial={{ opacity: 0, y: 20 }}
-								animate={{ opacity: 1, y: 0 }}
-								transition={{ duration: 0.3, delay: 0 }}
-							>
-								<Card className="transition-all hover:shadow-md">
-									<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-										<CardTitle className="font-medium text-sm">
-											Total Items
-										</CardTitle>
-										<Package className="size-4 text-muted-foreground" />
-									</CardHeader>
-									<CardContent>
-										<div className="font-bold text-2xl">{stats.total}</div>
-										<p className="text-muted-foreground text-xs">
-											All items in system
-										</p>
-									</CardContent>
-								</Card>
-							</motion.div>
-
-							<motion.div
-								initial={{ opacity: 0, y: 20 }}
-								animate={{ opacity: 1, y: 0 }}
-								transition={{ duration: 0.3, delay: 0.1 }}
-							>
-								<Card className="transition-all hover:shadow-md">
-									<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-										<CardTitle className="font-medium text-sm">
-											Unclaimed
-										</CardTitle>
-										<PackageX className="size-4 text-muted-foreground" />
-									</CardHeader>
-									<CardContent>
-										<div className="font-bold text-2xl">{stats.unclaimed}</div>
-										<p className="text-muted-foreground text-xs">
-											Awaiting claim
-										</p>
-									</CardContent>
-								</Card>
-							</motion.div>
-
-							<motion.div
-								initial={{ opacity: 0, y: 20 }}
-								animate={{ opacity: 1, y: 0 }}
-								transition={{ duration: 0.3, delay: 0.2 }}
-							>
-								<Card className="transition-all hover:shadow-md">
-									<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-										<CardTitle className="font-medium text-sm">
-											Claimed
-										</CardTitle>
-										<PackageCheck className="size-4 text-muted-foreground" />
-									</CardHeader>
-									<CardContent>
-										<div className="font-bold text-2xl">{stats.claimed}</div>
-										<p className="text-muted-foreground text-xs">
-											Being processed
-										</p>
-									</CardContent>
-								</Card>
-							</motion.div>
-
-							<motion.div
-								initial={{ opacity: 0, y: 20 }}
-								animate={{ opacity: 1, y: 0 }}
-								transition={{ duration: 0.3, delay: 0.3 }}
-							>
-								<Card className="transition-all hover:shadow-md">
-									<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-										<CardTitle className="font-medium text-sm">
-											Returned
-										</CardTitle>
-										<Archive className="size-4 text-muted-foreground" />
-									</CardHeader>
-									<CardContent>
-										<div className="font-bold text-2xl">{stats.returned}</div>
-										<p className="text-muted-foreground text-xs">
-											Successfully returned
-										</p>
-									</CardContent>
-								</Card>
-							</motion.div>
+							<StatsCard
+								title="Total Items"
+								value={stats.total}
+								description="All items in system"
+								icon={Package}
+								delay={0}
+							/>
+							<StatsCard
+								title="Unclaimed"
+								value={stats.unclaimed}
+								description="Awaiting claim"
+								icon={PackageX}
+								delay={0.1}
+							/>
+							<StatsCard
+								title="Claimed"
+								value={stats.claimed}
+								description="Being processed"
+								icon={PackageCheck}
+								delay={0.2}
+							/>
+							<StatsCard
+								title="Returned"
+								value={stats.returned}
+								description="Successfully returned"
+								icon={Archive}
+								delay={0.3}
+							/>
 						</>
 					)}
 				</div>
 
 				{/* Filters */}
-				<Card>
-					<CardHeader>
-						<CardTitle>Filters</CardTitle>
-					</CardHeader>
-					<CardContent className="flex flex-wrap gap-4">
-						<div className="flex items-center gap-2">
-							<label htmlFor="status-filter" className="font-medium text-sm">
-								Status:
-							</label>
-							<Select
-								value={statusFilter}
-								onValueChange={(value) =>
-									setStatusFilter(value as ItemStatus | "all")
-								}
-							>
-								<SelectTrigger id="status-filter" className="w-[180px]">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all">All Statuses</SelectItem>
-									<SelectItem value="unclaimed">Unclaimed</SelectItem>
-									<SelectItem value="claimed">Claimed</SelectItem>
-									<SelectItem value="returned">Returned</SelectItem>
-									<SelectItem value="archived">Archived</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
+				<FilterBar
+					hasActiveFilters={hasActiveFilters}
+					onClear={handleClearFilters}
+				>
+					<div className="flex items-center gap-2">
+						<label htmlFor="status-filter" className="font-medium text-sm">
+							Status:
+						</label>
+						<Select
+							value={statusFilter}
+							onValueChange={(value) =>
+								setStatusFilter(value as ItemStatus | "all")
+							}
+						>
+							<SelectTrigger id="status-filter" className="w-[180px]">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">All Statuses</SelectItem>
+								<SelectItem value="unclaimed">Unclaimed</SelectItem>
+								<SelectItem value="claimed">Claimed</SelectItem>
+								<SelectItem value="returned">Returned</SelectItem>
+								<SelectItem value="archived">Archived</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
 
-						<div className="flex items-center gap-2">
-							<label htmlFor="category-filter" className="font-medium text-sm">
-								Category ID:
-							</label>
-							<Select value={categoryFilter} onValueChange={setCategoryFilter}>
-								<SelectTrigger id="category-filter" className="w-[180px]">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all">All Categories</SelectItem>
-									{categoryIds.map((categoryId) => (
-										<SelectItem key={categoryId} value={categoryId.toString()}>
-											Category {categoryId}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-					</CardContent>
-				</Card>
+					<div className="flex items-center gap-2">
+						<label htmlFor="category-filter" className="font-medium text-sm">
+							Category ID:
+						</label>
+						<Select value={categoryFilter} onValueChange={setCategoryFilter}>
+							<SelectTrigger id="category-filter" className="w-[180px]">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">All Categories</SelectItem>
+								{categoryIds.map((categoryId) => (
+									<SelectItem key={categoryId} value={categoryId.toString()}>
+										Category {categoryId}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+				</FilterBar>
 
 				{/* Items Table */}
 				<Card>

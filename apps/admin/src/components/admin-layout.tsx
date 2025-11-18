@@ -1,14 +1,18 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { AppSidebar } from "./app-sidebar";
+import { AppSidebar } from "./layout/app-sidebar";
 import { SidebarInset, SidebarProvider } from "./ui/sidebar";
 
-export function AdminLayout({ children }: { children: React.ReactNode }) {
-	const pathname = usePathname();
+interface AdminLayoutProps {
+	children: React.ReactNode;
+}
 
-	// Don't show sidebar on login/signup pages
-	const isAuthPage = pathname === "/login" || pathname === "/signup";
+const AUTH_PAGES = ["/login", "/signup"] as const;
+
+export function AdminLayout({ children }: AdminLayoutProps) {
+	const pathname = usePathname();
+	const isAuthPage = AUTH_PAGES.some((page) => pathname === page);
 
 	if (isAuthPage) {
 		return <>{children}</>;
@@ -17,7 +21,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 	return (
 		<SidebarProvider>
 			<AppSidebar />
-			<SidebarInset>{children}</SidebarInset>
+			<SidebarInset className="flex flex-col">{children}</SidebarInset>
 		</SidebarProvider>
 	);
 }

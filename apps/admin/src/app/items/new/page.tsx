@@ -7,11 +7,12 @@ import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ItemForm } from "@/features/items/components/item-form";
 import { useCreateItem } from "@/features/items/hooks/use-item-mutations";
+import { getErrorMessage } from "@/lib/api-client";
 
 export default function NewItemPage() {
 	const router = useRouter();
@@ -23,19 +24,7 @@ export default function NewItemPage() {
 			toast.success("Item created successfully");
 			router.push("/dashboard" as Route);
 		} catch (error) {
-			// Handle different types of errors
-			if (error instanceof Error) {
-				// Check for Supabase Storage specific errors
-				if (error.message.includes("storage")) {
-					toast.error(`Storage error: ${error.message}`);
-				} else if (error.message.includes("upload")) {
-					toast.error(`Upload failed: ${error.message}`);
-				} else {
-					toast.error(`Failed to create item: ${error.message}`);
-				}
-			} else {
-				toast.error("Failed to create item. Please try again.");
-			}
+			toast.error(getErrorMessage(error));
 			console.error("Create item error:", error);
 		}
 	};
@@ -46,26 +35,19 @@ export default function NewItemPage() {
 
 	return (
 		<div className="flex flex-1 flex-col">
-			{/* Header */}
-			<header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-6">
-				<SidebarTrigger />
-				<div className="flex flex-1 items-center gap-4">
+			<PageHeader
+				title="Create New Item"
+				description="Add a new lost item to the system"
+				backButton={
 					<Button variant="ghost" size="icon" asChild>
 						<Link href={"/dashboard" as Route}>
 							<ArrowLeft />
 							<span className="sr-only">Back to dashboard</span>
 						</Link>
 					</Button>
-					<div className="flex-1">
-						<h1 className="font-bold text-2xl">Create New Item</h1>
-						<p className="text-muted-foreground text-sm">
-							Add a new lost item to the system
-						</p>
-					</div>
-				</div>
-			</header>
+				}
+			/>
 
-			{/* Main Content */}
 			<main className="flex-1 p-6">
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}

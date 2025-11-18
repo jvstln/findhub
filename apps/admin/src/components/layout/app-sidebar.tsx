@@ -17,7 +17,13 @@ import {
 	useSidebar,
 } from "@/components/ui/sidebar";
 
-const menuItems = [
+interface NavigationItem {
+	title: string;
+	icon: React.ComponentType<{ className?: string }>;
+	href: string;
+}
+
+const NAVIGATION_ITEMS: NavigationItem[] = [
 	{
 		title: "Dashboard",
 		icon: LayoutDashboard,
@@ -33,14 +39,26 @@ const menuItems = [
 		icon: Tags,
 		href: "/categories",
 	},
-];
+] as const;
+
+const FOOTER_ITEMS: NavigationItem[] = [
+	{
+		title: "Settings",
+		icon: Settings,
+		href: "/settings",
+	},
+	{
+		title: "Logout",
+		icon: LogOut,
+		href: "/login",
+	},
+] as const;
 
 export function AppSidebar() {
 	const pathname = usePathname();
 	const { setOpenMobile, isMobile } = useSidebar();
 
 	const handleLinkClick = () => {
-		// Close sidebar on mobile when a link is clicked
 		if (isMobile) {
 			setOpenMobile(false);
 		}
@@ -64,13 +82,14 @@ export function AppSidebar() {
 					<SidebarGroupLabel>Navigation</SidebarGroupLabel>
 					<SidebarGroupContent>
 						<SidebarMenu>
-							{menuItems.map((item) => {
+							{NAVIGATION_ITEMS.map((item) => {
 								const isActive = pathname.startsWith(item.href);
+								const Icon = item.icon;
 								return (
 									<SidebarMenuItem key={item.href}>
 										<SidebarMenuButton asChild isActive={isActive}>
 											<Link href={item.href} onClick={handleLinkClick}>
-												<item.icon className="size-4" />
+												<Icon className="size-4" />
 												<span>{item.title}</span>
 											</Link>
 										</SidebarMenuButton>
@@ -84,22 +103,19 @@ export function AppSidebar() {
 
 			<SidebarFooter className="border-t p-4">
 				<SidebarMenu>
-					<SidebarMenuItem>
-						<SidebarMenuButton asChild>
-							<Link href="/settings" onClick={handleLinkClick}>
-								<Settings className="size-4" />
-								<span>Settings</span>
-							</Link>
-						</SidebarMenuButton>
-					</SidebarMenuItem>
-					<SidebarMenuItem>
-						<SidebarMenuButton asChild>
-							<Link href="/login" onClick={handleLinkClick}>
-								<LogOut className="size-4" />
-								<span>Logout</span>
-							</Link>
-						</SidebarMenuButton>
-					</SidebarMenuItem>
+					{FOOTER_ITEMS.map((item) => {
+						const Icon = item.icon;
+						return (
+							<SidebarMenuItem key={item.href}>
+								<SidebarMenuButton asChild>
+									<Link href={item.href} onClick={handleLinkClick}>
+										<Icon className="size-4" />
+										<span>{item.title}</span>
+									</Link>
+								</SidebarMenuButton>
+							</SidebarMenuItem>
+						);
+					})}
 				</SidebarMenu>
 			</SidebarFooter>
 		</Sidebar>

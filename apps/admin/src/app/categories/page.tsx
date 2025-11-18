@@ -1,10 +1,22 @@
 "use client";
 
 import type { ItemCategory } from "@findhub/shared/types/category";
-import { PlusIcon, TagIcon } from "lucide-react";
-import { motion } from "motion/react";
+import { Plus, Tag } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { PageHeader } from "@/components/layout/page-header";
+import { ErrorState } from "@/components/shared/error-state";
+import { StatsCard } from "@/components/shared/stats-card";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -14,7 +26,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { StatsCardSkeleton } from "@/components/ui/stats-card-skeleton";
 import { CategoryForm } from "@/features/categories/components/category-form";
 import { CategoryTable } from "@/features/categories/components/category-table";
@@ -26,10 +37,11 @@ import {
 } from "@/features/categories/hooks/use-category-mutations";
 import { getErrorMessage } from "@/lib/api-client";
 
-type DialogMode = "create" | "edit" | "delete" | null;
+type DialogMode = "create" | "edit" | null;
 
 export default function CategoriesPage() {
 	const [dialogMode, setDialogMode] = useState<DialogMode>(null);
+	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [selectedCategory, setSelectedCategory] = useState<ItemCategory | null>(
 		null,
 	);
@@ -51,11 +63,16 @@ export default function CategoriesPage() {
 
 	const handleDelete = (category: ItemCategory) => {
 		setSelectedCategory(category);
-		setDialogMode("delete");
+		setDeleteDialogOpen(true);
 	};
 
 	const handleCloseDialog = () => {
 		setDialogMode(null);
+		setSelectedCategory(null);
+	};
+
+	const handleCloseDeleteDialog = () => {
+		setDeleteDialogOpen(false);
 		setSelectedCategory(null);
 	};
 
@@ -96,7 +113,7 @@ export default function CategoriesPage() {
 		try {
 			await deleteMutation.mutateAsync(selectedCategory.id);
 			toast.success(`"${selectedCategory.name}" has been deleted`);
-			handleCloseDialog();
+			handleCloseDeleteDialog();
 		} catch (error) {
 			toast.error(getErrorMessage(error));
 		}
@@ -104,14 +121,18 @@ export default function CategoriesPage() {
 
 	if (error) {
 		return (
-			<div className="flex min-h-screen items-center justify-center">
-				<div className="text-center">
-					<p className="text-destructive text-lg">Failed to load categories</p>
-					<p className="text-muted-foreground text-sm">
-						{error instanceof Error ? error.message : "Unknown error"}
-					</p>
-				</div>
-			</div>
+			<>
+				<PageHeader title="Categories" description="Manage item categories" />
+				<main className="flex-1 p-6">
+					<ErrorState
+						title="Failed to load categories"
+						message={
+							error instanceof Error ? error.message : "Unknown error occurred"
+						}
+						onRetry={() => window.location.reload()}
+					/>
+				</main>
+			</>
 		);
 	}
 
@@ -119,50 +140,29 @@ export default function CategoriesPage() {
 
 	return (
 		<div className="flex flex-1 flex-col">
-			{/* Header */}
-			<header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-6">
-				<SidebarTrigger />
-				<div className="flex flex-1 items-center justify-between">
-					<div>
-						<h1 className="font-bold text-2xl">Categories</h1>
-						<p className="text-muted-foreground text-sm">
-							Manage item categories
-						</p>
-					</div>
+			<PageHeader
+				title="Categories"
+				description="Manage item categories"
+				action={
 					<Button onClick={handleCreate}>
-						<PlusIcon />
-						<span>Add Category</span>
+						<Plus className="mr-2 size-4" />
+						Add Category
 					</Button>
-				</div>
-			</header>
+				}
+			/>
 
-			{/* Main Content */}
 			<main className="flex-1 space-y-6 p-6">
 				{/* Statistics Card */}
 				<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
 					{isLoading ? (
 						<StatsCardSkeleton />
 					) : (
-						<motion.div
-							initial={{ opacity: 0, y: 20 }}
-							animate={{ opacity: 1, y: 0 }}
-							transition={{ duration: 0.3 }}
-						>
-							<Card className="transition-all hover:shadow-md">
-								<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-									<CardTitle className="font-medium text-sm">
-										Total Categories
-									</CardTitle>
-									<TagIcon className="size-4 text-muted-foreground" />
-								</CardHeader>
-								<CardContent>
-									<div className="font-bold text-2xl">{totalCategories}</div>
-									<p className="text-muted-foreground text-xs">
-										Active categories
-									</p>
-								</CardContent>
-							</Card>
-						</motion.div>
+						<StatsCard
+							title="Total Categories"
+							value={totalCategories}
+							description="Active categories"
+							icon={Tag}
+						/>
 					)}
 				</div>
 
@@ -182,73 +182,67 @@ export default function CategoriesPage() {
 				</Card>
 			</main>
 
-			{/* Create Dialog */}
-			<Dialog open={dialogMode === "create"} onOpenChange={handleCloseDialog}>
+			{/* Create/Edit Dialog */}
+			<Dialog open={dialogMode !== null} onOpenChange={handleCloseDialog}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Create Category</DialogTitle>
+						<DialogTitle>
+							{dialogMode === "create" ? "Create Category" : "Edit Category"}
+						</DialogTitle>
 						<DialogDescription>
-							Add a new category for organizing lost items.
+							{dialogMode === "create"
+								? "Add a new category for organizing lost items."
+								: "Update the category name or description."}
 						</DialogDescription>
 					</DialogHeader>
-					<CategoryForm
-						onSubmit={handleSubmitCreate}
-						isLoading={createMutation.isPending}
-						submitLabel="Create Category"
-						onCancel={handleCloseDialog}
-					/>
-				</DialogContent>
-			</Dialog>
-
-			{/* Edit Dialog */}
-			<Dialog open={dialogMode === "edit"} onOpenChange={handleCloseDialog}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Edit Category</DialogTitle>
-						<DialogDescription>
-							Update the category name or description.
-						</DialogDescription>
-					</DialogHeader>
-					{selectedCategory && (
+					{dialogMode === "create" ? (
 						<CategoryForm
-							defaultValues={selectedCategory}
-							onSubmit={handleSubmitEdit}
-							isLoading={updateMutation.isPending}
-							submitLabel="Update Category"
+							onSubmit={handleSubmitCreate}
+							isLoading={createMutation.isPending}
+							submitLabel="Create Category"
 							onCancel={handleCloseDialog}
 						/>
+					) : (
+						selectedCategory && (
+							<CategoryForm
+								defaultValues={selectedCategory}
+								onSubmit={handleSubmitEdit}
+								isLoading={updateMutation.isPending}
+								submitLabel="Update Category"
+								onCancel={handleCloseDialog}
+							/>
+						)
 					)}
 				</DialogContent>
 			</Dialog>
 
 			{/* Delete Confirmation Dialog */}
-			<Dialog open={dialogMode === "delete"} onOpenChange={handleCloseDialog}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Delete Category</DialogTitle>
-						<DialogDescription>
+			<AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Delete Category</AlertDialogTitle>
+						<AlertDialogDescription>
 							Are you sure you want to delete "{selectedCategory?.name}"? This
 							action cannot be undone.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="flex justify-end gap-3 pt-4">
-						<Button
-							variant="outline"
-							onClick={handleCloseDialog}
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel
+							onClick={handleCloseDeleteDialog}
 							disabled={deleteMutation.isPending}
 						>
 							Cancel
-						</Button>
-						<Button
-							variant="destructive"
+						</AlertDialogCancel>
+						<AlertDialogAction
 							onClick={handleConfirmDelete}
 							disabled={deleteMutation.isPending}
+							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
 						>
 							{deleteMutation.isPending ? "Deleting..." : "Delete"}
-						</Button>
-					</div>
-				</DialogContent>
-			</Dialog>
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</div>
 	);
 }

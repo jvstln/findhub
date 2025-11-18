@@ -4,12 +4,17 @@ import type {
 	ItemStatus,
 	LostItemWithImages,
 } from "@findhub/shared/types/item";
-import { Plus, Search } from "lucide-react";
+import { Package, PackageCheck, PackageX, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+import { PageHeader } from "@/components/layout/page-header";
+import { ErrorState } from "@/components/shared/error-state";
+import { FilterBar } from "@/components/shared/filter-bar";
+import { StatsCard } from "@/components/shared/stats-card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
 import {
 	Select,
 	SelectContent,
@@ -17,7 +22,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { StatsCardSkeleton } from "@/components/ui/stats-card-skeleton";
 import { useCategories } from "@/features/categories/hooks/use-categories";
 import { ItemTable } from "@/features/items/components/item-table";
@@ -34,13 +38,16 @@ export default function ItemsPage() {
 	const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
 	// Build filters
-	const filters = {
-		query: searchQuery || undefined,
-		status: statusFilter !== "all" ? statusFilter : undefined,
-		categoryId: categoryFilter !== "all" ? categoryFilter : undefined,
-		page: 1,
-		pageSize: 50,
-	};
+	const filters = useMemo(
+		() => ({
+			query: searchQuery || undefined,
+			status: statusFilter !== "all" ? statusFilter : undefined,
+			categoryId: categoryFilter !== "all" ? categoryFilter : undefined,
+			page: 1,
+			pageSize: 50,
+		}),
+		[searchQuery, statusFilter, categoryFilter],
+	);
 
 	const { data, isLoading, error } = useItems(filters);
 	const { data: categories } = useCategories();
@@ -52,52 +59,72 @@ export default function ItemsPage() {
 	};
 
 	const handleDelete = async (item: LostItemWithImages) => {
-		await deleteItemMutation.mutateAsync(item.id);
+		try {
+			await deleteItemMutation.mutateAsync(item.id);
+			toast.success(`"${item.name}" has been deleted`);
+		} catch (error) {
+			toast.error("Failed to delete item");
+			console.error(error);
+		}
 	};
 
 	const handleStatusChange = async (
 		item: LostItemWithImages,
 		newStatus: ItemStatus,
 	) => {
-		await updateItemMutation.mutateAsync({
-			id: item.id,
-			data: { status: newStatus },
-		});
+		try {
+			await updateItemMutation.mutateAsync({
+				id: item.id,
+				data: { status: newStatus },
+			});
+			toast.success(`Status updated to ${newStatus}`);
+		} catch (error) {
+			toast.error("Failed to update status");
+			console.error(error);
+		}
 	};
 
+	const handleClearFilters = () => {
+		setSearchQuery("");
+		setStatusFilter("all");
+		setCategoryFilter("all");
+	};
+
+	const hasActiveFilters =
+		searchQuery !== "" || statusFilter !== "all" || categoryFilter !== "all";
+
 	// Calculate stats from current filtered data
-	const stats = data?.data
-		? {
-				total: data.total,
-				unclaimed: data.data.filter((item) => item.status === "unclaimed")
-					.length,
-				claimed: data.data.filter((item) => item.status === "claimed").length,
-				returned: data.data.filter((item) => item.status === "returned").length,
-			}
-		: { total: 0, unclaimed: 0, claimed: 0, returned: 0 };
+	const stats = useMemo(() => {
+		if (!data?.data) {
+			return { total: 0, unclaimed: 0, claimed: 0, returned: 0 };
+		}
+		return {
+			total: data.total,
+			unclaimed: data.data.filter((item) => item.status === "unclaimed").length,
+			claimed: data.data.filter((item) => item.status === "claimed").length,
+			returned: data.data.filter((item) => item.status === "returned").length,
+		};
+	}, [data]);
+
+	const emptyMessage = hasActiveFilters
+		? "No items match your filters"
+		: "No items found. Create your first item to get started.";
 
 	return (
-		<div className="flex min-h-screen flex-col">
-			{/* Header */}
-			<header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-6">
-				<SidebarTrigger />
-				<div className="flex flex-1 items-center justify-between">
-					<div>
-						<h1 className="font-bold text-2xl">Items Management</h1>
-						<p className="text-muted-foreground text-sm">
-							Manage all lost and found items
-						</p>
-					</div>
+		<div className="flex flex-1 flex-col">
+			<PageHeader
+				title="Items Management"
+				description="Manage all lost and found items"
+				action={
 					<Button asChild>
 						<Link href="/items/new">
 							<Plus className="mr-2 size-4" />
 							Add New Item
 						</Link>
 					</Button>
-				</div>
-			</header>
+				}
+			/>
 
-			{/* Main Content */}
 			<main className="flex-1 space-y-6 p-6">
 				{/* Stats Cards */}
 				<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -110,65 +137,38 @@ export default function ItemsPage() {
 						</>
 					) : (
 						<>
-							<div className="rounded-lg border bg-card p-6 text-card-foreground shadow-sm">
-								<div className="flex items-center justify-between">
-									<p className="font-medium text-muted-foreground text-sm">
-										Total Items
-									</p>
-								</div>
-								<div className="mt-2">
-									<p className="font-bold text-3xl">{stats.total}</p>
-								</div>
-							</div>
-
-							<div className="rounded-lg border bg-card p-6 text-card-foreground shadow-sm">
-								<div className="flex items-center justify-between">
-									<p className="font-medium text-muted-foreground text-sm">
-										Unclaimed
-									</p>
-								</div>
-								<div className="mt-2">
-									<p className="font-bold text-3xl">{stats.unclaimed}</p>
-								</div>
-							</div>
-
-							<div className="rounded-lg border bg-card p-6 text-card-foreground shadow-sm">
-								<div className="flex items-center justify-between">
-									<p className="font-medium text-muted-foreground text-sm">
-										Claimed
-									</p>
-								</div>
-								<div className="mt-2">
-									<p className="font-bold text-3xl">{stats.claimed}</p>
-								</div>
-							</div>
-
-							<div className="rounded-lg border bg-card p-6 text-card-foreground shadow-sm">
-								<div className="flex items-center justify-between">
-									<p className="font-medium text-muted-foreground text-sm">
-										Returned
-									</p>
-								</div>
-								<div className="mt-2">
-									<p className="font-bold text-3xl">{stats.returned}</p>
-								</div>
-							</div>
+							<StatsCard
+								title="Total Items"
+								value={stats.total}
+								icon={Package}
+							/>
+							<StatsCard
+								title="Unclaimed"
+								value={stats.unclaimed}
+								icon={PackageX}
+							/>
+							<StatsCard
+								title="Claimed"
+								value={stats.claimed}
+								icon={PackageCheck}
+							/>
+							<StatsCard
+								title="Returned"
+								value={stats.returned}
+								icon={Package}
+							/>
 						</>
 					)}
 				</div>
 
 				{/* Filters */}
-				<div className="flex flex-col gap-4 rounded-lg border bg-card p-4 sm:flex-row sm:items-center">
-					<div className="relative flex-1">
-						<Search className="-translate-y-1/2 absolute top-1/2 left-3 size-4 text-muted-foreground" />
-						<Input
-							placeholder="Search items by name, description, or keywords..."
-							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
-							className="pl-9"
-						/>
-					</div>
-
+				<FilterBar
+					searchValue={searchQuery}
+					onSearchChange={setSearchQuery}
+					searchPlaceholder="Search items by name, description, or keywords..."
+					hasActiveFilters={hasActiveFilters}
+					onClear={handleClearFilters}
+				>
 					<Select
 						value={statusFilter}
 						onValueChange={(value) =>
@@ -200,64 +200,48 @@ export default function ItemsPage() {
 							))}
 						</SelectContent>
 					</Select>
-
-					{(searchQuery ||
-						statusFilter !== "all" ||
-						categoryFilter !== "all") && (
-						<Button
-							variant="outline"
-							onClick={() => {
-								setSearchQuery("");
-								setStatusFilter("all");
-								setCategoryFilter("all");
-							}}
-						>
-							Clear Filters
-						</Button>
-					)}
-				</div>
+				</FilterBar>
 
 				{/* Items Table */}
-				<div className="rounded-lg border bg-card">
-					{error ? (
-						<div className="flex min-h-[400px] items-center justify-center p-6">
-							<div className="text-center">
-								<p className="text-destructive text-lg">Failed to load items</p>
-								<p className="text-muted-foreground text-sm">
-									{error instanceof Error ? error.message : "Unknown error"}
-								</p>
-							</div>
-						</div>
-					) : (
-						<ItemTable
-							items={data?.data || []}
-							onEdit={handleEdit}
-							onDelete={handleDelete}
-							onStatusChange={handleStatusChange}
-							isLoading={isLoading}
-							emptyMessage={
-								searchQuery ||
-								statusFilter !== "all" ||
-								categoryFilter !== "all"
-									? "No items match your filters"
-									: "No items found. Create your first item to get started."
-							}
-						/>
-					)}
-				</div>
+				<Card>
+					<CardContent className="p-0">
+						{error ? (
+							<ErrorState
+								title="Failed to load items"
+								message={
+									error instanceof Error
+										? error.message
+										: "Unknown error occurred"
+								}
+								onRetry={() => window.location.reload()}
+							/>
+						) : (
+							<ItemTable
+								items={data?.data || []}
+								onEdit={handleEdit}
+								onDelete={handleDelete}
+								onStatusChange={handleStatusChange}
+								isLoading={isLoading}
+								emptyMessage={emptyMessage}
+							/>
+						)}
+					</CardContent>
+				</Card>
 
 				{/* Pagination Info */}
 				{data && data.total > 0 && (
-					<div className="flex items-center justify-between rounded-lg border bg-card p-4">
-						<p className="text-muted-foreground text-sm">
-							Showing {data.data.length} of {data.total} items
-						</p>
-						{data.totalPages > 1 && (
+					<Card>
+						<CardContent className="flex items-center justify-between p-4">
 							<p className="text-muted-foreground text-sm">
-								Page {data.page} of {data.totalPages}
+								Showing {data.data.length} of {data.total} items
 							</p>
-						)}
-					</div>
+							{data.totalPages > 1 && (
+								<p className="text-muted-foreground text-sm">
+									Page {data.page} of {data.totalPages}
+								</p>
+							)}
+						</CardContent>
+					</Card>
 				)}
 			</main>
 		</div>

@@ -1,4 +1,16 @@
-import { db, itemImages, itemStatusHistories, lostItems } from "@findhub/db";
+import type {
+	LostItemWithSecurity,
+	PublicLostItem,
+	SecurityQuestionInput,
+	SecurityQuestionWithDecryptedAnswer,
+} from "@findhub/db";
+import {
+	db,
+	itemImages,
+	itemStatusHistories,
+	lostItems,
+	securityQuestions,
+} from "@findhub/db";
 import {
 	and,
 	desc,
@@ -21,6 +33,7 @@ import type {
 } from "@findhub/shared/types/item";
 import { getPaginatedMeta } from "@findhub/shared/utils";
 import { categoryService } from "./category.service";
+import { securityQuestionsService } from "./security-questions.service";
 import { deleteItemImage, uploadItemImage } from "./upload.service";
 
 export interface CreateItemInput {
@@ -32,6 +45,9 @@ export interface CreateItemInput {
 	dateFound: Date;
 	images?: File[];
 	createdById: string;
+	securityQuestions?: SecurityQuestionInput[];
+	hideLocation?: boolean;
+	hideDateFound?: boolean;
 }
 
 export interface UpdateItemInput {
@@ -43,6 +59,9 @@ export interface UpdateItemInput {
 	dateFound?: Date;
 	images?: File[];
 	status?: ItemStatus;
+	securityQuestions?: SecurityQuestionInput[];
+	hideLocation?: boolean;
+	hideDateFound?: boolean;
 }
 
 export interface ImageUploadInput {
@@ -135,6 +154,116 @@ export class ItemsService {
 	}
 
 	/**
+	 * Get items for public view with privacy filtering applied
+	 * Excludes items from location/date filters when those fields are hidden
+	 */
+	async getPublicItems(
+		filters: SearchFilters,
+	): Promise<PaginatedResponse<PublicLostItem>> {
+		const {
+			query,
+			categoryId,
+			location,
+			status,
+			dateFrom,
+			dateTo,
+			page,
+			pageSize,
+		} = searchFiltersSchema.parse(filters);
+
+		// Build WHERE conditions
+		const conditions = [];
+
+		// Keyword search (name, description, or keywords)
+		if (query) {
+			const queryPattern = `%${query}%`;
+			conditions.push(
+				or(
+					ilike(lostItems.name, queryPattern),
+					ilike(lostItems.description, queryPattern),
+					sql`${queryPattern} ANY(${lostItems.keywords})`,
+				),
+			);
+		}
+
+		// Category filter
+		if (categoryId) {
+			const categoryIdAsNumber = Number.parseInt(categoryId, 10);
+			if (!Number.isNaN(categoryIdAsNumber)) {
+				conditions.push(eq(lostItems.categoryId, categoryIdAsNumber));
+			}
+		}
+
+		// Location filter - exclude items with hidden location
+		if (location) {
+			conditions.push(
+				and(
+					ilike(lostItems.location, `%${location}%`),
+					eq(lostItems.hideLocation, false),
+				),
+			);
+		}
+
+		// Status filter
+		if (status) conditions.push(eq(lostItems.status, status));
+
+		// Date range filters - exclude items with hidden date
+		if (dateFrom) {
+			conditions.push(
+				and(
+					gte(lostItems.dateFound, dateFrom),
+					eq(lostItems.hideDateFound, false),
+				),
+			);
+		}
+		if (dateTo) {
+			conditions.push(
+				and(
+					lte(lostItems.dateFound, dateTo),
+					eq(lostItems.hideDateFound, false),
+				),
+			);
+		}
+
+		// Combine all conditions
+		const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+		// Calculate offset
+		const offset = (page - 1) * pageSize;
+
+		// Execute query with pagination
+		const [items, total] = await Promise.all([
+			db.query.lostItems.findMany({
+				where: whereClause,
+				with: {
+					images: {
+						orderBy: (images, { asc }) => [asc(images.displayOrder)],
+					},
+				},
+				orderBy: (items, { desc }) => [desc(items.createdAt)],
+				limit: pageSize,
+				offset: offset,
+			}),
+			db.$count(lostItems, whereClause),
+		]);
+
+		// Apply privacy filtering to results
+		const publicItems: PublicLostItem[] = items.map((item) => {
+			const { location, dateFound, ...rest } = item;
+			return {
+				...rest,
+				location: item.hideLocation ? null : location,
+				dateFound: item.hideDateFound ? null : dateFound,
+			} as PublicLostItem;
+		});
+
+		return {
+			data: publicItems,
+			...getPaginatedMeta({ total, pageSize }),
+		};
+	}
+
+	/**
 	 * Get a single item by ID
 	 */
 	async getItemById(id: number): Promise<LostItem | null> {
@@ -170,7 +299,79 @@ export class ItemsService {
 	}
 
 	/**
+	 * Get item with security questions (admin only)
+	 * Returns complete item information with decrypted security questions
+	 */
+	async getItemWithSecurity(id: number): Promise<LostItemWithSecurity | null> {
+		const item = await this.getItemByIdWithImages(id);
+
+		if (!item) {
+			return null;
+		}
+
+		// Get security questions (encrypted)
+		const questions = await db
+			.select()
+			.from(securityQuestions)
+			.where(eq(securityQuestions.itemId, id))
+			.orderBy(securityQuestions.displayOrder);
+
+		return {
+			...item,
+			securityQuestions: questions,
+		};
+	}
+
+	/**
+	 * Get item with decrypted security questions (admin only)
+	 * Returns complete item information with decrypted answers
+	 */
+	async getItemWithDecryptedSecurity(id: number): Promise<
+		| (LostItemWithImages & {
+				securityQuestions: SecurityQuestionWithDecryptedAnswer[];
+		  })
+		| null
+	> {
+		const item = await this.getItemByIdWithImages(id);
+
+		if (!item) {
+			return null;
+		}
+
+		// Get security questions with decrypted answers
+		const questions =
+			await securityQuestionsService.getQuestionsWithAnswers(id);
+
+		return {
+			...item,
+			securityQuestions: questions,
+		};
+	}
+
+	/**
+	 * Get item for public view with privacy filtering applied
+	 * Hides location/date if privacy controls are enabled
+	 * Never includes security questions
+	 */
+	async getPublicItem(id: number): Promise<PublicLostItem | null> {
+		const item = await this.getItemByIdWithImages(id);
+
+		if (!item) {
+			return null;
+		}
+
+		// Apply privacy filtering
+		const { location, dateFound, ...rest } = item;
+		return {
+			...rest,
+			location: item.hideLocation ? null : location,
+			dateFound: item.hideDateFound ? null : dateFound,
+		} as PublicLostItem;
+	}
+
+	/**
 	 * Create a new lost item with optional multiple image uploads to Supabase Storage
+	 * Supports security questions and privacy controls
 	 */
 	async createItem(input: CreateItemInput): Promise<LostItemWithImages> {
 		// Validate category exists if provided
@@ -212,7 +413,7 @@ export class ItemsService {
 		}
 
 		try {
-			// Create the item first
+			// Create the item first with privacy controls
 			const [item] = await db
 				.insert(lostItems)
 				.values({
@@ -224,6 +425,8 @@ export class ItemsService {
 					dateFound: input.dateFound,
 					createdById: input.createdById,
 					status: "unclaimed",
+					hideLocation: input.hideLocation ?? false,
+					hideDateFound: input.hideDateFound ?? false,
 				})
 				.returning();
 
@@ -251,6 +454,15 @@ export class ItemsService {
 					.returning();
 
 				images.push(...insertedImages);
+			}
+
+			// Create security questions if provided
+			if (input.securityQuestions && input.securityQuestions.length > 0) {
+				await securityQuestionsService.createQuestions(
+					item.id,
+					input.securityQuestions,
+					input.createdById,
+				);
 			}
 
 			return {
@@ -390,6 +602,7 @@ export class ItemsService {
 
 	/**
 	 * Update an existing item with optional image replacement
+	 * Supports updating security questions and privacy controls
 	 */
 	async updateItem(
 		id: number,
@@ -412,36 +625,42 @@ export class ItemsService {
 			}
 		}
 
-		try {
-			// Prepare update data (exclude images as they're handled separately)
-			const updateData: Record<string, unknown> = {
-				...input,
-				updatedAt: new Date(),
-			};
+		// Prepare update data (exclude images and securityQuestions as they're handled separately)
+		const updateData: Record<string, unknown> = {
+			...input,
+			updatedAt: new Date(),
+		};
 
-			// Remove the images field from update data (it's a File array, not a DB field)
-			delete updateData.images;
+		// Remove fields that aren't DB columns
+		delete updateData.images;
+		delete updateData.securityQuestions;
 
-			const [item] = await db
-				.update(lostItems)
-				.set(updateData)
-				.where(eq(lostItems.id, id))
-				.returning();
+		const [item] = await db
+			.update(lostItems)
+			.set(updateData)
+			.where(eq(lostItems.id, id))
+			.returning();
 
-			if (!item) {
-				return null;
-			}
-
-			// Handle new images if provided
-			if (input.images && input.images.length > 0) {
-				await this.addItemImages(id, input.images, item.createdById);
-			}
-
-			// Return item with images
-			return await this.getItemByIdWithImages(id);
-		} catch (error) {
-			throw error;
+		if (!item) {
+			return null;
 		}
+
+		// Handle new images if provided
+		if (input.images && input.images.length > 0) {
+			await this.addItemImages(id, input.images, item.createdById);
+		}
+
+		// Update security questions if provided
+		if (input.securityQuestions !== undefined) {
+			await securityQuestionsService.updateQuestions(
+				id,
+				input.securityQuestions,
+				item.createdById,
+			);
+		}
+
+		// Return item with images
+		return await this.getItemByIdWithImages(id);
 	}
 
 	/**

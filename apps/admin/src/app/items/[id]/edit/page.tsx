@@ -1,11 +1,14 @@
 "use client";
 
 import type { ItemStatus, NewItem } from "@findhub/shared/types/item";
-import { Loader2Icon, TrashIcon } from "lucide-react";
+import { ArrowLeft, Loader2, Trash2 } from "lucide-react";
 import type { Route } from "next";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useState } from "react";
 import { toast } from "sonner";
+import { PageHeader } from "@/components/layout/page-header";
+import { ErrorState } from "@/components/shared/error-state";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -15,9 +18,9 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import {
 	Select,
@@ -33,6 +36,7 @@ import {
 	useDeleteItem,
 	useUpdateItem,
 } from "@/features/items/hooks/use-item-mutations";
+import { getErrorMessage } from "@/lib/api-client";
 
 interface EditItemPageProps {
 	params: Promise<{
@@ -75,7 +79,6 @@ export default function EditItemPage({ params }: EditItemPageProps) {
 					location: data.location,
 					dateFound: data.dateFound,
 					images: data.images,
-					// Include status if it was changed
 					status: selectedStatus || undefined,
 				},
 			});
@@ -83,9 +86,7 @@ export default function EditItemPage({ params }: EditItemPageProps) {
 			toast.success("Item updated successfully");
 			router.push("/dashboard" as Route);
 		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : "Failed to update item";
-			toast.error(errorMessage);
+			toast.error(getErrorMessage(error));
 		}
 	};
 
@@ -102,9 +103,7 @@ export default function EditItemPage({ params }: EditItemPageProps) {
 			toast.success("Item deleted successfully");
 			router.push("/dashboard" as Route);
 		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : "Failed to delete item";
-			toast.error(errorMessage);
+			toast.error(getErrorMessage(error));
 			setIsDeleteDialogOpen(false);
 		}
 	};
@@ -117,148 +116,179 @@ export default function EditItemPage({ params }: EditItemPageProps) {
 	// Loading state
 	if (isLoadingItem) {
 		return (
-			<div className="flex min-h-[400px] items-center justify-center">
-				<div className="flex flex-col items-center gap-3">
-					<Loader2Icon className="size-8 animate-spin text-muted-foreground" />
-					<p className="text-muted-foreground text-sm">Loading item...</p>
-				</div>
-			</div>
+			<>
+				<PageHeader
+					title="Edit Item"
+					description="Update item details, change status, or delete the item"
+				/>
+				<main className="flex min-h-[400px] items-center justify-center p-6">
+					<div className="flex flex-col items-center gap-3">
+						<Loader2 className="size-8 animate-spin text-muted-foreground" />
+						<p className="text-muted-foreground text-sm">Loading item...</p>
+					</div>
+				</main>
+			</>
 		);
 	}
 
 	// Error state
 	if (error || !item) {
 		return (
-			<div className="flex min-h-[400px] items-center justify-center">
-				<div className="text-center">
-					<h2 className="mb-2 font-semibold text-lg">Item Not Found</h2>
-					<p className="mb-4 text-muted-foreground text-sm">
-						The item you're looking for doesn't exist or has been deleted.
-					</p>
-					<Button onClick={() => router.push("/dashboard" as Route)}>
-						Back to Dashboard
-					</Button>
-				</div>
-			</div>
+			<>
+				<PageHeader
+					title="Edit Item"
+					description="Update item details, change status, or delete the item"
+					backButton={
+						<Button variant="ghost" size="icon" asChild>
+							<Link href={"/dashboard" as Route}>
+								<ArrowLeft />
+								<span className="sr-only">Back to dashboard</span>
+							</Link>
+						</Button>
+					}
+				/>
+				<main className="flex-1 p-6">
+					<ErrorState
+						title="Item Not Found"
+						message="The item you're looking for doesn't exist or has been deleted."
+						onRetry={() => router.push("/dashboard" as Route)}
+					/>
+				</main>
+			</>
 		);
 	}
 
 	const currentStatus = selectedStatus || item.status;
 
 	return (
-		<div className="mx-auto max-w-4xl space-y-6 p-6">
-			{/* Header */}
-			<div className="flex items-start justify-between gap-4">
-				<div>
-					<h1 className="font-bold text-2xl tracking-tight">Edit Item</h1>
-					<p className="text-muted-foreground text-sm">
-						Update item details, change status, or delete the item
-					</p>
-				</div>
-				<AlertDialog
-					open={isDeleteDialogOpen}
-					onOpenChange={setIsDeleteDialogOpen}
-				>
-					<AlertDialogTrigger asChild>
-						<Button variant="destructive" size="sm">
-							<TrashIcon />
-							<span>Delete</span>
+		<div className="flex flex-1 flex-col">
+			<PageHeader
+				title="Edit Item"
+				description="Update item details, change status, or delete the item"
+				action={
+					<>
+						<AlertDialog
+							open={isDeleteDialogOpen}
+							onOpenChange={setIsDeleteDialogOpen}
+						>
+							<AlertDialogContent>
+								<AlertDialogHeader>
+									<AlertDialogTitle>Delete Item</AlertDialogTitle>
+									<AlertDialogDescription>
+										Are you sure you want to delete "{item.name}"? This action
+										cannot be undone. The item and its associated images will be
+										permanently removed from the system.
+										{item.status === "claimed" && (
+											<span className="mt-2 block font-medium text-destructive">
+												Warning: This item is currently marked as claimed.
+											</span>
+										)}
+									</AlertDialogDescription>
+								</AlertDialogHeader>
+								<AlertDialogFooter>
+									<AlertDialogCancel disabled={deleteMutation.isPending}>
+										Cancel
+									</AlertDialogCancel>
+									<AlertDialogAction
+										onClick={handleDelete}
+										disabled={deleteMutation.isPending}
+										className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+									>
+										{deleteMutation.isPending ? (
+											<>
+												<Loader2 className="mr-2 size-4 animate-spin" />
+												Deleting...
+											</>
+										) : (
+											"Delete Item"
+										)}
+									</AlertDialogAction>
+								</AlertDialogFooter>
+							</AlertDialogContent>
+						</AlertDialog>
+						<Button
+							variant="destructive"
+							size="sm"
+							onClick={() => setIsDeleteDialogOpen(true)}
+						>
+							<Trash2 className="mr-2 size-4" />
+							Delete
 						</Button>
-					</AlertDialogTrigger>
-					<AlertDialogContent>
-						<AlertDialogHeader>
-							<AlertDialogTitle>Delete Item</AlertDialogTitle>
-							<AlertDialogDescription>
-								Are you sure you want to delete "{item.name}"? This action
-								cannot be undone. The item and its associated image will be
-								permanently removed from the system.
-								{item.status === "claimed" && (
-									<span className="mt-2 block font-medium text-destructive">
-										Warning: This item is currently marked as claimed.
-									</span>
-								)}
-							</AlertDialogDescription>
-						</AlertDialogHeader>
-						<AlertDialogFooter>
-							<AlertDialogCancel disabled={deleteMutation.isPending}>
-								Cancel
-							</AlertDialogCancel>
-							<AlertDialogAction
-								onClick={handleDelete}
-								disabled={deleteMutation.isPending}
-								className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-							>
-								{deleteMutation.isPending ? (
-									<>
-										<Loader2Icon className="animate-spin" />
-										<span>Deleting...</span>
-									</>
-								) : (
-									"Delete Item"
-								)}
-							</AlertDialogAction>
-						</AlertDialogFooter>
-					</AlertDialogContent>
-				</AlertDialog>
-			</div>
+					</>
+				}
+				backButton={
+					<Button variant="ghost" size="icon" asChild>
+						<Link href={"/dashboard" as Route}>
+							<ArrowLeft />
+							<span className="sr-only">Back to dashboard</span>
+						</Link>
+					</Button>
+				}
+			/>
 
-			{/* Status Change Section */}
-			<div className="rounded-lg border bg-card p-6">
-				<div className="space-y-4">
-					<div>
-						<h2 className="mb-1 font-semibold text-lg">Item Status</h2>
-						<p className="text-muted-foreground text-sm">
-							Change the status of this item to track its lifecycle
-						</p>
-					</div>
-
-					<div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-						<Field className="flex-1">
-							<FieldLabel htmlFor="status">Current Status</FieldLabel>
-							<div className="flex items-center gap-3">
-								<StatusBadge status={currentStatus} />
-								<Select
-									value={currentStatus}
-									onValueChange={handleStatusChange}
-									disabled={updateMutation.isPending}
-								>
-									<SelectTrigger id="status" className="w-[200px]">
-										<SelectValue placeholder="Change status" />
-									</SelectTrigger>
-									<SelectContent>
-										{STATUS_OPTIONS.map((option) => (
-											<SelectItem key={option.value} value={option.value}>
-												{option.label}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
+			<main className="flex-1 space-y-6 p-6">
+				<div className="mx-auto max-w-4xl space-y-6">
+					{/* Status Change Section */}
+					<Card>
+						<CardContent className="space-y-4 pt-6">
+							<div>
+								<h2 className="mb-1 font-semibold text-lg">Item Status</h2>
+								<p className="text-muted-foreground text-sm">
+									Change the status of this item to track its lifecycle
+								</p>
 							</div>
-							<FieldDescription>
-								Status changes will be saved when you update the item
-							</FieldDescription>
-						</Field>
-					</div>
-				</div>
-			</div>
 
-			{/* Item Form */}
-			<div className="rounded-lg border bg-card p-6">
-				<div className="mb-6">
-					<h2 className="mb-1 font-semibold text-lg">Item Details</h2>
-					<p className="text-muted-foreground text-sm">
-						Update the item information below
-					</p>
-				</div>
+							<div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+								<Field className="flex-1">
+									<FieldLabel htmlFor="status">Current Status</FieldLabel>
+									<div className="flex items-center gap-3">
+										<StatusBadge status={currentStatus} />
+										<Select
+											value={currentStatus}
+											onValueChange={handleStatusChange}
+											disabled={updateMutation.isPending}
+										>
+											<SelectTrigger id="status" className="w-[200px]">
+												<SelectValue placeholder="Change status" />
+											</SelectTrigger>
+											<SelectContent>
+												{STATUS_OPTIONS.map((option) => (
+													<SelectItem key={option.value} value={option.value}>
+														{option.label}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+									</div>
+									<FieldDescription>
+										Status changes will be saved when you update the item
+									</FieldDescription>
+								</Field>
+							</div>
+						</CardContent>
+					</Card>
 
-				<ItemForm
-					defaultValues={item}
-					onSubmit={handleSubmit}
-					isLoading={updateMutation.isPending}
-					submitLabel="Update Item"
-					onCancel={handleCancel}
-				/>
-			</div>
+					{/* Item Form */}
+					<Card>
+						<CardContent className="space-y-6 pt-6">
+							<div>
+								<h2 className="mb-1 font-semibold text-lg">Item Details</h2>
+								<p className="text-muted-foreground text-sm">
+									Update the item information below
+								</p>
+							</div>
+
+							<ItemForm
+								defaultValues={item}
+								onSubmit={handleSubmit}
+								isLoading={updateMutation.isPending}
+								submitLabel="Update Item"
+								onCancel={handleCancel}
+							/>
+						</CardContent>
+					</Card>
+				</div>
+			</main>
 		</div>
 	);
 }
