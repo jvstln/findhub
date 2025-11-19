@@ -11,10 +11,6 @@ helpers, Axios clients, and responsive hooks.
 // UI primitives (button, input, dropdowns, etc.)
 import { Button, Input } from "@findhub/ui/components";
 
-// Layout shells
-import { LayoutWrapper } from "@findhub/ui/components/layout/public";
-import { AdminLayout, PageHeader } from "@findhub/ui/components/layout/admin";
-
 // Hooks & utilities
 import { useIsMobile, useOnlineStatus } from "@findhub/ui/hooks";
 import { getQueryClient } from "@findhub/ui/lib/query-client";

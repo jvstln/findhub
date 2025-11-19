@@ -1,8 +1,8 @@
 "use client";
 
+import { SidebarTrigger } from "@findhub/ui/components/ui/sidebar";
+import { cn } from "@findhub/ui/lib";
 import type React from "react";
-import { SidebarTrigger } from "../../ui/sidebar";
-import { cn } from "../../../lib/utils";
 
 interface PageHeaderProps {
 	title: string;

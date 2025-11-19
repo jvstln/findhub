@@ -1,9 +1,14 @@
 "use client";
 
+import {
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+} from "@findhub/ui/components/ui/card";
+import { cn } from "@findhub/ui/lib/utils";
 import type { LucideIcon } from "lucide-react";
 import { motion } from "motion/react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 
 interface StatsCardProps {
 	title: string;

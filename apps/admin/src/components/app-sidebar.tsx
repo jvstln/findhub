@@ -1,10 +1,5 @@
 "use client";
 
-import { LayoutDashboard, LogOut, Package, Tags } from "lucide-react";
-import type { Route } from "next";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import * as React from "react";
 import {
 	Sidebar,
 	SidebarContent,
@@ -17,7 +12,12 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 	useSidebar,
-} from "../../ui/sidebar";
+} from "@findhub/ui/components/ui/sidebar";
+import { LayoutDashboard, LogOut, Package, Tags } from "lucide-react";
+import type { Route } from "next";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import type * as React from "react";
 
 interface NavigationItem {
 	title: string;

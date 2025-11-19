@@ -1,6 +1,15 @@
 "use client";
 
 import type { SecurityQuestionWithDecryptedAnswer } from "@findhub/db";
+import { Badge } from "@findhub/ui/components/ui/badge";
+import { Button } from "@findhub/ui/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@findhub/ui/components/ui/card";
 import {
 	CheckCircle2Icon,
 	ChevronDownIcon,
@@ -11,15 +20,6 @@ import {
 	ShieldCheckIcon,
 } from "lucide-react";
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
 
 interface SecurityQuestionsDisplayProps {
 	questions: SecurityQuestionWithDecryptedAnswer[];

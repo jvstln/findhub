@@ -4,14 +4,6 @@ import type {
 	ItemStatus,
 	NewItemWithSecurity,
 } from "@findhub/shared/types/item";
-import { ArrowLeft, Loader2, Trash2 } from "lucide-react";
-import type { Route } from "next";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { use, useState } from "react";
-import { toast } from "sonner";
-import { PageHeader } from "@findhub/ui/components/layout/admin";
-import { ErrorState } from "@/components/shared/error-state";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -21,17 +13,30 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+} from "@findhub/ui/components/ui/alert-dialog";
+import { Button } from "@findhub/ui/components/ui/button";
+import { Card, CardContent } from "@findhub/ui/components/ui/card";
+import {
+	Field,
+	FieldDescription,
+	FieldLabel,
+} from "@findhub/ui/components/ui/field";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@/components/ui/select";
+} from "@findhub/ui/components/ui/select";
+import { getErrorMessage } from "@findhub/ui/lib/api-client";
+import { ArrowLeft, Loader2, Trash2 } from "lucide-react";
+import type { Route } from "next";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { use, useState } from "react";
+import { toast } from "sonner";
+import { PageHeader } from "@/components/page-header";
+import { ErrorState } from "@/components/shared/error-state";
 import { ItemForm } from "@/features/items/components/item-form";
 import { StatusBadge } from "@/features/items/components/status-badge";
 import { useItem } from "@/features/items/hooks/use-item";
@@ -39,7 +44,6 @@ import {
 	useDeleteItem,
 	useUpdateItem,
 } from "@/features/items/hooks/use-item-mutations";
-import { getErrorMessage } from "@findhub/ui/lib/api-client";
 
 interface EditItemPageProps {
 	params: Promise<{

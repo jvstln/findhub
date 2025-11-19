@@ -4,6 +4,22 @@ import type {
 	LostItemWithImages,
 	NewItemWithSecurity,
 } from "@findhub/shared/types/item";
+import { Button } from "@findhub/ui/components/ui/button";
+import {
+	Field,
+	FieldDescription,
+	FieldError,
+	FieldLabel,
+} from "@findhub/ui/components/ui/field";
+import { Input } from "@findhub/ui/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@findhub/ui/components/ui/select";
+import { Textarea } from "@findhub/ui/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { EyeOffIcon, ImageIcon, Loader2Icon, XIcon } from "lucide-react";
 import Image from "next/image";
@@ -11,22 +27,6 @@ import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import {
-	Field,
-	FieldDescription,
-	FieldError,
-	FieldLabel,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { useCategories } from "@/features/categories/hooks/use-categories";
 import { PrivacyControls } from "./privacy-controls";
 import { SecurityQuestionsBuilder } from "./security-questions-builder";

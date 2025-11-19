@@ -1,26 +1,26 @@
 "use client";
 
 import type { SecurityQuestionInput } from "@findhub/shared/schemas";
-import { GripVerticalIcon, PlusIcon, TrashIcon, XIcon } from "lucide-react";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@findhub/ui/components/ui/button";
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@/components/ui/card";
-import { Field, FieldError, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+} from "@findhub/ui/components/ui/card";
+import { Field, FieldError, FieldLabel } from "@findhub/ui/components/ui/field";
+import { Input } from "@findhub/ui/components/ui/input";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+} from "@findhub/ui/components/ui/select";
+import { Textarea } from "@findhub/ui/components/ui/textarea";
+import { GripVerticalIcon, PlusIcon, TrashIcon, XIcon } from "lucide-react";
+import { useState } from "react";
 
 interface SecurityQuestionsBuilderProps {
 	questions: SecurityQuestionInput[];

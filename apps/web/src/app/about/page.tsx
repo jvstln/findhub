@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@findhub/ui/components/ui/button";
 import {
 	Building2,
 	CheckCircle2,
@@ -11,7 +12,6 @@ import {
 import { motion } from "motion/react";
 import type { Route } from "next";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 
 export default function AboutPage() {
 	const containerVariants = {

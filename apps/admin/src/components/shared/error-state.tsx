@@ -1,9 +1,9 @@
 "use client";
 
+import { Button } from "@findhub/ui/components/ui/button";
+import { Card, CardContent } from "@findhub/ui/components/ui/card";
+import { cn } from "@findhub/ui/lib/utils";
 import { AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 
 interface ErrorStateProps {
 	title?: string;

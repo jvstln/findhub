@@ -4,25 +4,24 @@ import type {
 	ItemStatus,
 	LostItemWithImages,
 } from "@findhub/shared/types/item";
-import { Package, PackageCheck, PackageX, Plus } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
-import { toast } from "sonner";
-import { PageHeader } from "@findhub/ui/components/layout/admin";
-import { ErrorState } from "@/components/shared/error-state";
-import { FilterBar } from "@/components/shared/filter-bar";
-import { StatsCard } from "@/components/shared/stats-card";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@findhub/ui/components/ui/button";
+import { Card, CardContent } from "@findhub/ui/components/ui/card";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@/components/ui/select";
-import { StatsCardSkeleton } from "@/components/ui/stats-card-skeleton";
+} from "@findhub/ui/components/ui/select";
+import { StatsCardSkeleton } from "@findhub/ui/components/ui/stats-card-skeleton";
+import { Package, PackageCheck, PackageX, Plus } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+import { ErrorState } from "@/components/shared/error-state";
+import { FilterBar } from "@/components/shared/filter-bar";
+import { StatsCard } from "@/components/shared/stats-card";
 import { useCategories } from "@/features/categories/hooks/use-categories";
 import { ItemTable } from "@/features/items/components/item-table";
 import {
@@ -30,6 +29,7 @@ import {
 	useUpdateItem,
 } from "@/features/items/hooks/use-item-mutations";
 import { useItems } from "@/features/items/hooks/use-items";
+import { PageHeader } from "../../components/page-header";
 
 export default function ItemsPage() {
 	const router = useRouter();

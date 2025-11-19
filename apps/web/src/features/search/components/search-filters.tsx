@@ -2,18 +2,23 @@
 
 import type { ItemCategory } from "@findhub/shared/types/category";
 import type { SearchFilters as SearchFiltersType } from "@findhub/shared/types/item";
-import { Filter, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@findhub/ui/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+} from "@findhub/ui/components/ui/card";
+import { Input } from "@findhub/ui/components/ui/input";
+import { Label } from "@findhub/ui/components/ui/label";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@/components/ui/select";
+} from "@findhub/ui/components/ui/select";
+import { Filter, X } from "lucide-react";
 
 interface SearchFiltersProps {
 	filters: SearchFiltersType;

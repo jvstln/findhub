@@ -26,6 +26,7 @@
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
 		"seed:categories": "bun run src/seeds/run-seed.ts categories",
+		"seed:lost-items": "bun run src/seeds/run-seed.ts lost-items",
 		"seed:all": "bun run src/seeds/run-seed.ts all",
 		"seed:check": "bun run src/seeds/check-seeds.ts",
 		"seed": "bun run src/seeds/run-seed.ts"

@@ -1,10 +1,15 @@
 import type { LostItemWithDecryptedSecurity } from "@findhub/db/schemas/items";
 import type { LostItemWithImages } from "@findhub/shared/types/item";
+import { Badge } from "@findhub/ui/components/ui/badge";
+import {
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+} from "@findhub/ui/components/ui/card";
+import { Separator } from "@findhub/ui/components/ui/separator";
 import { Calendar, Clock, EyeOffIcon, MapPin, Tag } from "lucide-react";
 import Image from "next/image";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { useCategories } from "@/features/categories/hooks/use-categories";
 import { formatItemDateLong, formatItemDateTime } from "@/lib/date-utils";
 import { SecurityQuestionsDisplay } from "./security-questions-display";

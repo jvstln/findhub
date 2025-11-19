@@ -1,12 +1,6 @@
 "use client";
 
 import type { ItemCategory } from "@findhub/shared/types/category";
-import { Plus, Tag } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
-import { PageHeader } from "@findhub/ui/components/layout/admin";
-import { ErrorState } from "@/components/shared/error-state";
-import { StatsCard } from "@/components/shared/stats-card";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -16,17 +10,28 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+} from "@findhub/ui/components/ui/alert-dialog";
+import { Button } from "@findhub/ui/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+} from "@findhub/ui/components/ui/card";
 import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-} from "@/components/ui/dialog";
-import { StatsCardSkeleton } from "@/components/ui/stats-card-skeleton";
+} from "@findhub/ui/components/ui/dialog";
+import { StatsCardSkeleton } from "@findhub/ui/components/ui/stats-card-skeleton";
+import { getErrorMessage } from "@findhub/ui/lib/api-client";
+import { Plus, Tag } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { ErrorState } from "@/components/shared/error-state";
+import { StatsCard } from "@/components/shared/stats-card";
 import { CategoryForm } from "@/features/categories/components/category-form";
 import { CategoryTable } from "@/features/categories/components/category-table";
 import { useCategories } from "@/features/categories/hooks/use-categories";
@@ -35,7 +40,7 @@ import {
 	useDeleteCategory,
 	useUpdateCategory,
 } from "@/features/categories/hooks/use-category-mutations";
-import { getErrorMessage } from "@findhub/ui/lib/api-client";
+import { PageHeader } from "../../components/page-header";
 
 type DialogMode = "create" | "edit" | null;
 

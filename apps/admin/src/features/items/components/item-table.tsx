@@ -4,6 +4,42 @@ import type {
 	ItemStatus,
 	LostItemWithImages,
 } from "@findhub/shared/types/item";
+import { Badge } from "@findhub/ui/components/ui/badge";
+import { Button } from "@findhub/ui/components/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@findhub/ui/components/ui/dialog";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@findhub/ui/components/ui/dropdown-menu";
+import { ItemCardSkeleton } from "@findhub/ui/components/ui/item-card-skeleton";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@findhub/ui/components/ui/select";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@findhub/ui/components/ui/table";
+import { TableSkeleton } from "@findhub/ui/components/ui/table-skeleton";
+import { cn } from "@findhub/ui/lib/utils";
 import {
 	ArrowUpDown,
 	Calendar,
@@ -16,42 +52,6 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ItemCardSkeleton } from "@/components/ui/item-card-skeleton";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
-import { TableSkeleton } from "@/components/ui/table-skeleton";
-import { cn } from "@/lib/utils";
 import { ItemGrid } from "./item-grid";
 import { PrivacyStatusBadge } from "./privacy-status-badge";
 import { StatusBadge } from "./status-badge";

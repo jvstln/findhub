@@ -1,11 +1,11 @@
 "use client";
 
+import { Button } from "@findhub/ui/components/ui/button";
 import { ArrowRight, Clock, Heart, Search, Shield } from "lucide-react";
 import { motion } from "motion/react";
 import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { ItemCard } from "@/features/items/components/item-card";
 import { useItems } from "@/features/items/hooks/use-items";
 

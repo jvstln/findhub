@@ -1,8 +1,11 @@
 "use client";
 
-import type React from "react";
+import {
+	SidebarInset,
+	SidebarProvider,
+} from "@findhub/ui/components/ui/sidebar";
 import { usePathname } from "next/navigation";
-import { SidebarInset, SidebarProvider } from "../../ui/sidebar";
+import type React from "react";
 import { AppSidebar } from "./app-sidebar";
 
 interface AdminLayoutProps {

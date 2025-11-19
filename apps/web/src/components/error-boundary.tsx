@@ -1,8 +1,6 @@
 "use client";
 
-import { AlertTriangle, RefreshCw } from "lucide-react";
-import { Component, type ReactNode } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@findhub/ui/components/ui/button";
 import {
 	Card,
 	CardContent,
@@ -10,7 +8,9 @@ import {
 	CardFooter,
 	CardHeader,
 	CardTitle,
-} from "@/components/ui/card";
+} from "@findhub/ui/components/ui/card";
+import { AlertTriangle, RefreshCw } from "lucide-react";
+import { Component, type ReactNode } from "react";
 
 interface ErrorBoundaryProps {
 	children: ReactNode;

@@ -1,14 +1,14 @@
 "use client";
 
-import { CalendarIcon, EyeOffIcon, MapPinIcon } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@findhub/ui/components/ui/badge";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+} from "@findhub/ui/components/ui/tooltip";
+import { cn } from "@findhub/ui/lib/utils";
+import { CalendarIcon, EyeOffIcon, MapPinIcon } from "lucide-react";
 
 interface PrivacyStatusBadgeProps {
 	hideLocation: boolean;

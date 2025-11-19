@@ -1,7 +1,7 @@
 "use client";
 
+import { Badge } from "@findhub/ui/components/ui/badge";
 import { Database } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 
 interface CachedDataBadgeProps {
 	show: boolean;

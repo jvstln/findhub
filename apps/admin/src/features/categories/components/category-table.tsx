@@ -1,9 +1,8 @@
 "use client";
 
 import type { ItemCategory } from "@findhub/shared/types/category";
-import { Edit2Icon, Trash2Icon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@findhub/ui/components/ui/button";
+import { Skeleton } from "@findhub/ui/components/ui/skeleton";
 import {
 	Table,
 	TableBody,
@@ -11,7 +10,8 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
-} from "@/components/ui/table";
+} from "@findhub/ui/components/ui/table";
+import { Edit2Icon, Trash2Icon } from "lucide-react";
 
 interface CategoryTableProps {
 	/**

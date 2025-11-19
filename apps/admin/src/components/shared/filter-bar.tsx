@@ -1,10 +1,10 @@
 "use client";
 
+import { Button } from "@findhub/ui/components/ui/button";
+import { Card, CardContent } from "@findhub/ui/components/ui/card";
+import { Input } from "@findhub/ui/components/ui/input";
+import { cn } from "@findhub/ui/lib/utils";
 import { Search, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 
 interface FilterBarProps {
 	searchValue?: string;

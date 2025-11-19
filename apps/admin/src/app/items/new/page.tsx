@@ -1,18 +1,23 @@
 "use client";
 
 import type { NewItemWithSecurity } from "@findhub/shared/types/item";
+import { Button } from "@findhub/ui/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+} from "@findhub/ui/components/ui/card";
+import { getErrorMessage } from "@findhub/ui/lib/api-client";
 import { ArrowLeft } from "lucide-react";
 import { motion } from "motion/react";
 import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { PageHeader } from "@findhub/ui/components/layout/admin";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/page-header";
 import { ItemForm } from "@/features/items/components/item-form";
 import { useCreateItem } from "@/features/items/hooks/use-item-mutations";
-import { getErrorMessage } from "@findhub/ui/lib/api-client";
 
 export default function NewItemPage() {
 	const router = useRouter();

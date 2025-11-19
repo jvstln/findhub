@@ -54,12 +54,12 @@
       },
       "devDependencies": {
         "@findhub/db": "workspace:*",
-        "@tailwindcss/postcss": "^4.1.10",
+        "@tailwindcss/postcss": "catalog:",
         "@tanstack/react-query-devtools": "^5.85.5",
         "@types/node": "^20",
         "@types/react": "19.2.2",
         "@types/react-dom": "19.2.2",
-        "tailwindcss": "^4.1.10",
+        "tailwindcss": "catalog:",
         "typescript": "catalog:",
       },
     },
@@ -121,13 +121,13 @@
         "zod": "catalog:",
       },
       "devDependencies": {
-        "@tailwindcss/postcss": "^4.1.10",
+        "@tailwindcss/postcss": "catalog:",
         "@tanstack/react-query-devtools": "^5.85.5",
         "@types/node": "^20",
         "@types/react": "19.2.2",
         "@types/react-dom": "19.2.2",
         "@vite-pwa/assets-generator": "^1.0.2",
-        "tailwindcss": "^4.1.10",
+        "tailwindcss": "catalog:",
         "typescript": "catalog:",
       },
     },
@@ -196,17 +196,23 @@
         "better-auth": "catalog:",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
+        "date-fns": "^4.1.0",
         "lucide-react": "^0.553.0",
         "motion": "^12.23.24",
         "next-themes": "^0.4.6",
         "radix-ui": "^1.4.2",
+        "react-day-picker": "^9.4.4",
         "sonner": "^2.0.5",
         "tailwind-merge": "^3.3.1",
+        "tw-animate-css": "^1.3.4",
         "zod": "catalog:",
       },
       "devDependencies": {
+        "@tailwindcss/postcss": "catalog:",
+        "@tanstack/react-query-devtools": "^5.90.2",
         "@types/react": "19.2.2",
         "@types/react-dom": "19.2.2",
+        "tailwindcss": "catalog:",
         "tsdown": "catalog:",
       },
       "peerDependencies": {
@@ -217,9 +223,11 @@
     },
   },
   "catalog": {
+    "@tailwindcss/postcss": "^4.1.10",
     "better-auth": "^1.3.28",
     "dotenv": "^17.2.2",
     "drizzle-orm": "^0.44.2",
+    "tailwindcss": "^4.1.10",
     "tsdown": "^0.15.5",
     "typescript": "^5.8.2",
     "zod": "^4.1.11",
@@ -436,6 +444,8 @@
     "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@2.3.4", "", { "os": "win32", "cpu": "x64" }, "sha512-FGCijXecmC4IedQ0esdYNlMpx0Jxgf4zceCaMu6fkjWyjgn50ZQtMiqZZQ0Q/77yqPxvtkgZAvt5uGw0gAAjig=="],
 
     "@canvas/image-data": ["@canvas/image-data@1.1.0", "", {}, "sha512-QdObRRjRbcXGmM1tmJ+MrHcaz1MftF2+W7YI+MsphnsCrmtyfS0d5qJbk0MeSbUeyM/jCb0hmnkXPsy026L7dA=="],
+
+    "@date-fns/tz": ["@date-fns/tz@1.4.1", "", {}, "sha512-P5LUNhtbj6YfI3iJjw5EL9eUAG6OitD0W3fWQcpQjDRc/QIsL0tRNuO1PcDvPccWL1fSTXXdE1ds+l95DV/OFA=="],
 
     "@drizzle-team/brocli": ["@drizzle-team/brocli@0.10.2", "", {}, "sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w=="],
 
@@ -1051,6 +1061,10 @@
 
     "data-view-byte-offset": ["data-view-byte-offset@1.0.1", "", { "dependencies": { "call-bound": "^1.0.2", "es-errors": "^1.3.0", "is-data-view": "^1.0.1" } }, "sha512-BS8PfmtDGnrgYdOonGZQdLZslWIeCGFP9tpan0hi1Co2Zr2NKADsvGYA8XxuG/4UWgJ6Cjtv+YJnB6MM69QGlQ=="],
 
+    "date-fns": ["date-fns@4.1.0", "", {}, "sha512-Ukq0owbQXxa/U3EGtsdVBkR1w7KOQ5gIBqdH2hkvknzZPYvBxb/aa6E8L7tmjFtkwZBu3UXBbjIgPo/Ez4xaNg=="],
+
+    "date-fns-jalali": ["date-fns-jalali@4.1.0-0", "", {}, "sha512-hTIP/z+t+qKwBDcmmsnmjWTduxCg+5KfdqWQvb2X/8C9+knYY6epN/pfxdDuyVlSVeFz0sM5eEfwIUQ70U4ckg=="],
+
     "debug": ["debug@4.4.3", "", { "dependencies": { "ms": "^2.1.3" } }, "sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA=="],
 
     "decode-bmp": ["decode-bmp@0.2.1", "", { "dependencies": { "@canvas/image-data": "^1.0.0", "to-data-view": "^1.1.0" } }, "sha512-NiOaGe+GN0KJqi2STf24hfMkFitDUaIoUU3eKvP/wAbLe8o6FuW5n/x7MHPR0HKvBokp6MQY/j7w8lewEeVCIA=="],
@@ -1450,6 +1464,8 @@
     "randombytes": ["randombytes@2.1.0", "", { "dependencies": { "safe-buffer": "^5.1.0" } }, "sha512-vYl3iOX+4CKUWuxGi9Ukhie6fsqXqS9FE2Zaic4tNFD2N2QQaXOMFbuKK4QmDHC0JO6B1Zp41J0LpT0oR68amQ=="],
 
     "react": ["react@19.2.0", "", {}, "sha512-tmbWg6W31tQLeB5cdIBOicJDJRR2KzXsV7uSK9iNfLWQ5bIZfxuPEHp7M8wiHyHnn0DD1i7w3Zmin0FtkrwoCQ=="],
+
+    "react-day-picker": ["react-day-picker@9.11.1", "", { "dependencies": { "@date-fns/tz": "^1.4.1", "date-fns": "^4.1.0", "date-fns-jalali": "^4.1.0-0" }, "peerDependencies": { "react": ">=16.8.0" } }, "sha512-l3ub6o8NlchqIjPKrRFUCkTUEq6KwemQlfv3XZzzwpUeGwmDJ+0u0Upmt38hJyd7D/vn2dQoOoLV/qAp0o3uUw=="],
 
     "react-dom": ["react-dom@19.2.0", "", { "dependencies": { "scheduler": "^0.27.0" }, "peerDependencies": { "react": "^19.2.0" } }, "sha512-UlbRu4cAiGaIewkPyiRGJk0imDN2T3JjieT6spoL2UeSf5od4n5LB/mQ4ejmxhCFT1tYe8IvaFulzynWovsEFQ=="],
 

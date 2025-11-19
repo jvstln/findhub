@@ -2,19 +2,19 @@
 
 import { createCategorySchema } from "@findhub/shared/schemas";
 import type { ItemCategory } from "@findhub/shared/types/category";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2Icon } from "lucide-react";
-import { useForm } from "react-hook-form";
-import type { z } from "zod";
-import { Button } from "@/components/ui/button";
+import { Button } from "@findhub/ui/components/ui/button";
 import {
 	Field,
 	FieldDescription,
 	FieldError,
 	FieldLabel,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+} from "@findhub/ui/components/ui/field";
+import { Input } from "@findhub/ui/components/ui/input";
+import { Textarea } from "@findhub/ui/components/ui/textarea";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2Icon } from "lucide-react";
+import { useForm } from "react-hook-form";
+import type { z } from "zod";
 
 type FormData = z.infer<typeof createCategorySchema>;
 

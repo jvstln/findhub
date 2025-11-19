@@ -1,15 +1,19 @@
 "use client";
 
-import { CalendarIcon, EyeIcon, EyeOffIcon, MapPinIcon } from "lucide-react";
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@/components/ui/card";
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
-import { Switch } from "@/components/ui/switch";
+} from "@findhub/ui/components/ui/card";
+import {
+	Field,
+	FieldDescription,
+	FieldLabel,
+} from "@findhub/ui/components/ui/field";
+import { Switch } from "@findhub/ui/components/ui/switch";
+import { CalendarIcon, EyeIcon, EyeOffIcon, MapPinIcon } from "lucide-react";
 
 interface PrivacyControlsProps {
 	hideLocation: boolean;

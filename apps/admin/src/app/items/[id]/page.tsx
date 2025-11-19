@@ -1,12 +1,12 @@
 "use client";
 
+import { Button } from "@findhub/ui/components/ui/button";
+import { SidebarTrigger } from "@findhub/ui/components/ui/sidebar";
 import { ArrowLeft, Edit, Loader2Icon } from "lucide-react";
 import { motion } from "motion/react";
 import type { Route } from "next";
 import Link from "next/link";
 import { use } from "react";
-import { Button } from "@/components/ui/button";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ItemDetail } from "@/features/items/components/item-detail";
 import { useItemWithSecurity } from "@/features/items/hooks/use-item-with-security";
 

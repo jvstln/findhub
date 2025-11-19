@@ -1,8 +1,8 @@
 "use client";
 
+import { Button } from "@findhub/ui/components/ui/button";
+import { cn } from "@findhub/ui/lib/utils";
 import type { LucideIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 interface EmptyStateProps {
 	title?: string;

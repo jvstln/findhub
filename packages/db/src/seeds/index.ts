@@ -1,4 +1,9 @@
 import { seedCategories } from "./categories.js";
+import { seedLostItems } from "./lost-items.js";
+
+// Export individual seed functions
+export { seedCategories } from "./categories.js";
+export { seedLostItems } from "./lost-items.js";
 
 /**
  * Run all seeds in order
@@ -8,6 +13,7 @@ export async function runAllSeeds() {
 
 	try {
 		await seedCategories();
+		await seedLostItems();
 
 		console.log("All seeds completed successfully!");
 	} catch (error) {

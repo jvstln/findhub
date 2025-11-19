@@ -1,12 +1,16 @@
 "use client";
 
+import { Button } from "@findhub/ui/components/ui/button";
+import {
+	Sheet,
+	SheetContent,
+	SheetTrigger,
+} from "@findhub/ui/components/ui/sheet";
 import { Menu, Search } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Button } from "../../ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "../../ui/sheet";
 
 export function Header() {
 	const pathname = usePathname();

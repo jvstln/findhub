@@ -1,11 +1,16 @@
 "use client";
 
+import { Button } from "@findhub/ui/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+} from "@findhub/ui/components/ui/card";
+import { useOnlineStatus } from "@findhub/ui/hooks";
 import { CheckCircle2, WifiOff, XCircle } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useItems } from "@/features/items/hooks/use-items";
-import { useOnlineStatus } from "@findhub/ui/hooks";
 
 /**
  * Offline functionality test page

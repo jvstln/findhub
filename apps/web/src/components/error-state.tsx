@@ -1,15 +1,15 @@
 "use client";
 
-import { AlertCircle, RefreshCw, WifiOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@findhub/ui/components/ui/button";
 import {
 	Card,
 	CardDescription,
 	CardFooter,
 	CardHeader,
 	CardTitle,
-} from "@/components/ui/card";
+} from "@findhub/ui/components/ui/card";
 import { getErrorMessage } from "@findhub/ui/lib/api-client";
+import { AlertCircle, RefreshCw, WifiOff } from "lucide-react";
 
 interface ErrorStateProps {
 	error: unknown;

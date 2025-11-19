@@ -1,10 +1,13 @@
 #!/usr/bin/env bun
 import { seedCategories } from "./categories.js";
+import { seedLostItems } from "./lost-items.js";
 
 const AVAILABLE_SEEDS = {
 	categories: seedCategories,
+	"lost-items": seedLostItems,
 	all: async () => {
 		await seedCategories();
+		await seedLostItems();
 	},
 } as const;
 

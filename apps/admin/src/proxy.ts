@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { authClient } from "./lib/auth-client";
 
 export default async function authMiddleware(request: NextRequest) {
+	console.log("Running nextjs proxy...");
 	const { pathname } = request.nextUrl;
 
 	// Public routes that don't require authentication

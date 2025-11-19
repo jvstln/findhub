@@ -1,5 +1,5 @@
 import type { ItemStatus } from "@findhub/shared/types/item";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@findhub/ui/components/ui/badge";
 
 interface StatusBadgeProps {
 	status: ItemStatus;

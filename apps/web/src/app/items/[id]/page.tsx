@@ -1,15 +1,15 @@
 "use client";
 
+import { Button } from "@findhub/ui/components/ui/button";
+import { useOnlineStatus } from "@findhub/ui/hooks";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 import type { Route } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CachedDataBadge } from "@/components/cached-data-badge";
-import { Button } from "@/components/ui/button";
 import { ItemDetail } from "@/features/items/components/item-detail";
 import { useItem } from "@/features/items/hooks/use-item";
-import { useOnlineStatus } from "@findhub/ui/hooks";
 
 export default function ItemDetailPage({ params }: { params: { id: string } }) {
 	const itemId = Number.parseInt(params.id, 10);

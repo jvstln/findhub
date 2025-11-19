@@ -1,6 +1,6 @@
 import type { PublicLostItem } from "@findhub/shared/types/item";
+import { cn } from "@findhub/ui/lib/utils";
 import { motion } from "motion/react";
-import { cn } from "@/lib/utils";
 import { ItemCard } from "./item-card";
 
 interface ItemGridProps {
