@@ -41,6 +41,16 @@ This directory contains comprehensive E2E tests for the FindHub application usin
 - Data synchronization when coming back online
 - Offline navigation within cached pages
 
+### 6. Security Questions and Privacy Controls API (`security-privacy-api.spec.ts`)
+- **Admin API**: Creating items with security questions (multiple choice and free text)
+- **Admin API**: Privacy controls (hide location, hide date)
+- **Admin API**: Retrieving items with decrypted security questions
+- **Admin API**: Updating security questions and privacy settings
+- **Public API**: Privacy filtering (hidden location/date)
+- **Public API**: Verification that security questions are never exposed
+- **Access Control**: Authentication requirements for admin endpoints
+- See [README.security-privacy-api.md](./README.security-privacy-api.md) for detailed documentation
+
 ## Running Tests
 
 ### Prerequisites

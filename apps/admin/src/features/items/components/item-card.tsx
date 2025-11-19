@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCategories } from "@/features/categories/hooks/use-categories";
 import { formatItemDate } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
+import { PrivacyStatusBadge } from "./privacy-status-badge";
 import { StatusBadge } from "./status-badge";
 
 interface ItemCardProps {
@@ -57,7 +58,14 @@ export function ItemCard({ item, onClick, className }: ItemCardProps) {
 				<CardHeader>
 					<div className="flex items-start justify-between gap-2">
 						<CardTitle className="line-clamp-1 text-lg">{item.name}</CardTitle>
-						<StatusBadge status={item.status} />
+						<div className="flex flex-col gap-1.5">
+							<StatusBadge status={item.status} />
+							<PrivacyStatusBadge
+								hideLocation={item.hideLocation}
+								hideDateFound={item.hideDateFound}
+								variant="compact"
+							/>
+						</div>
 					</div>
 				</CardHeader>
 

@@ -53,6 +53,7 @@ import {
 import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { cn } from "@/lib/utils";
 import { ItemGrid } from "./item-grid";
+import { PrivacyStatusBadge } from "./privacy-status-badge";
 import { StatusBadge } from "./status-badge";
 
 type SortField = "name" | "category" | "dateFound" | "location" | "status";
@@ -288,6 +289,7 @@ export function ItemTable({
 										<ArrowUpDown className="ml-2 size-4" />
 									</Button>
 								</TableHead>
+								<TableHead className="w-[80px]">Privacy</TableHead>
 								<TableHead className="w-[100px]">Actions</TableHead>
 							</TableRow>
 						</TableHeader>
@@ -372,6 +374,13 @@ export function ItemTable({
 										) : (
 											<StatusBadge status={item.status} />
 										)}
+									</TableCell>
+									<TableCell>
+										<PrivacyStatusBadge
+											hideLocation={item.hideLocation}
+											hideDateFound={item.hideDateFound}
+											variant="compact"
+										/>
 									</TableCell>
 									<TableCell>
 										<DropdownMenu>

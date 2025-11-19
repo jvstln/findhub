@@ -29,11 +29,12 @@ This specification defines security and privacy enhancements for the FindHub los
 2. WHEN an Admin_User clicks the "Add Security Question" button, THE FindHub_System SHALL display a security question input interface
 3. THE FindHub_System SHALL allow the Admin_User to create security questions with either multiple choice options or free-text answer format
 4. WHEN an Admin_User selects multiple choice format, THE FindHub_System SHALL provide input fields for the question text and at least two choice options with one marked as correct
+4. THE Admin_User SHALL be able to add up to 10 security questions and any number of choices per item
 5. WHEN an Admin_User selects free-text format, THE FindHub_System SHALL provide input fields for the question text and the expected answer
 6. THE FindHub_System SHALL allow the Admin_User to add multiple Security_Questions to a single Lost_Item
 7. WHEN an Admin_User submits the Item_Registration_Form with Security_Questions, THE FindHub_System SHALL store each Security_Question in the Security_Question_Table with a reference to the Lost_Item
 8. THE FindHub_System SHALL store Security_Answers in encrypted format in the database
-9. THE FindHub_System SHALL allow the Admin_User to remove Security_Questions before submitting the Item_Registration_Form
+9. THE FindHub_System SHALL allow the Admin_User to remove and add Security_Questions before submitting the Item_Registration_Form
 
 ### Requirement 2: Security Question Storage
 

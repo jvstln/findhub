@@ -1,8 +1,8 @@
 import type {
+	LostItemWithDecryptedSecurity,
 	LostItemWithSecurity,
 	PublicLostItem,
 	SecurityQuestionInput,
-	SecurityQuestionWithDecryptedAnswer,
 } from "@findhub/db";
 import {
 	db,
@@ -326,12 +326,9 @@ export class ItemsService {
 	 * Get item with decrypted security questions (admin only)
 	 * Returns complete item information with decrypted answers
 	 */
-	async getItemWithDecryptedSecurity(id: number): Promise<
-		| (LostItemWithImages & {
-				securityQuestions: SecurityQuestionWithDecryptedAnswer[];
-		  })
-		| null
-	> {
+	async getItemWithDecryptedSecurity(
+		id: number,
+	): Promise<LostItemWithDecryptedSecurity | null> {
 		const item = await this.getItemByIdWithImages(id);
 
 		if (!item) {

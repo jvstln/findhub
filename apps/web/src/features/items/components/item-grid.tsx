@@ -1,11 +1,11 @@
-import type { LostItem } from "@findhub/shared/types/item";
+import type { PublicLostItem } from "@findhub/shared/types/item";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { ItemCard } from "./item-card";
 
 interface ItemGridProps {
-	items: LostItem[];
-	onItemClick?: (item: LostItem) => void;
+	items: PublicLostItem[];
+	onItemClick?: (item: PublicLostItem) => void;
 	className?: string;
 	emptyMessage?: string;
 }

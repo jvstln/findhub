@@ -1,15 +1,25 @@
+import type { LostItemWithDecryptedSecurity } from "@findhub/db/schemas/items";
 import type { LostItemWithImages } from "@findhub/shared/types/item";
-import { Calendar, Clock, MapPin, Tag } from "lucide-react";
+import { Calendar, Clock, EyeOffIcon, MapPin, Tag } from "lucide-react";
 import Image from "next/image";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useCategories } from "@/features/categories/hooks/use-categories";
 import { formatItemDateLong, formatItemDateTime } from "@/lib/date-utils";
+import { SecurityQuestionsDisplay } from "./security-questions-display";
 import { StatusBadge } from "./status-badge";
 
 interface ItemDetailProps {
-	item: LostItemWithImages;
+	item: LostItemWithImages | LostItemWithDecryptedSecurity;
 	showClaimInstructions?: boolean;
+}
+
+// Type guard to check if item has security questions
+function hasSecurityQuestions(
+	item: LostItemWithImages | LostItemWithDecryptedSecurity,
+): item is LostItemWithDecryptedSecurity {
+	return "securityQuestions" in item;
 }
 
 export function ItemDetail({
@@ -90,16 +100,38 @@ export function ItemDetail({
 					<div className="grid gap-4 sm:grid-cols-2">
 						<div className="flex items-start gap-3">
 							<MapPin className="mt-0.5 size-5 text-muted-foreground" />
-							<div>
-								<p className="font-medium text-sm">Location Found</p>
+							<div className="flex-1">
+								<div className="mb-1 flex items-center gap-2">
+									<p className="font-medium text-sm">Location Found</p>
+									{item.hideLocation && (
+										<Badge
+											variant="secondary"
+											className="flex items-center gap-1 text-muted-foreground"
+										>
+											<EyeOffIcon className="size-3" />
+											<span className="text-xs">Hidden from public</span>
+										</Badge>
+									)}
+								</div>
 								<p className="text-muted-foreground text-sm">{item.location}</p>
 							</div>
 						</div>
 
 						<div className="flex items-start gap-3">
 							<Calendar className="mt-0.5 size-5 text-muted-foreground" />
-							<div>
-								<p className="font-medium text-sm">Date Found</p>
+							<div className="flex-1">
+								<div className="mb-1 flex items-center gap-2">
+									<p className="font-medium text-sm">Date Found</p>
+									{item.hideDateFound && (
+										<Badge
+											variant="secondary"
+											className="flex items-center gap-1 text-muted-foreground"
+										>
+											<EyeOffIcon className="size-3" />
+											<span className="text-xs">Hidden from public</span>
+										</Badge>
+									)}
+								</div>
 								<p className="text-muted-foreground text-sm">
 									{formattedDateFound}
 								</p>
@@ -130,6 +162,11 @@ export function ItemDetail({
 					</div>
 				</CardContent>
 			</Card>
+
+			{/* Security Questions Section (Admin Only) */}
+			{hasSecurityQuestions(item) && item.securityQuestions.length > 0 && (
+				<SecurityQuestionsDisplay questions={item.securityQuestions} />
+			)}
 
 			{/* Claim Instructions */}
 			{showClaimInstructions && item.status === "unclaimed" && (

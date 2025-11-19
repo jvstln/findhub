@@ -1,9 +1,11 @@
 "use client";
 
-import { createItemSchema } from "@findhub/shared/schemas";
-import type { LostItemWithImages, NewItem } from "@findhub/shared/types/item";
+import type {
+	LostItemWithImages,
+	NewItemWithSecurity,
+} from "@findhub/shared/types/item";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ImageIcon, Loader2Icon, XIcon } from "lucide-react";
+import { EyeOffIcon, ImageIcon, Loader2Icon, XIcon } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -26,14 +28,29 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useCategories } from "@/features/categories/hooks/use-categories";
+import { PrivacyControls } from "./privacy-controls";
+import { SecurityQuestionsBuilder } from "./security-questions-builder";
 
-// Create a form-specific schema that handles string inputs for date
-const formSchema = createItemSchema
-	.omit({ images: true, dateFound: true })
-	.extend({
-		dateFound: z.string().min(1, "Date found is required"),
-		images: z.any().optional(),
-	});
+// Create a form-specific schema that handles string inputs for date and includes security questions
+const formSchema = z.object({
+	name: z.string().min(3, "Name must be at least 3 characters").max(255),
+	description: z
+		.string()
+		.min(10, "Description must be at least 10 characters")
+		.max(2000),
+	category: z.string().min(1, "Category is required"),
+	keywords: z.string().optional(),
+	location: z
+		.string()
+		.min(3, "Location must be at least 3 characters")
+		.max(255),
+	dateFound: z.string().min(1, "Date found is required"),
+	status: z.enum(["unclaimed", "claimed", "returned", "archived"]).optional(),
+	images: z.any().optional(),
+	hideLocation: z.boolean(),
+	hideDateFound: z.boolean(),
+	securityQuestions: z.array(z.any()),
+});
 
 type FormData = z.infer<typeof formSchema>;
 
@@ -45,7 +62,7 @@ interface ItemFormProps {
 	/**
 	 * Callback when form is submitted successfully
 	 */
-	onSubmit: (data: NewItem) => void | Promise<void>;
+	onSubmit: (data: NewItemWithSecurity) => void | Promise<void>;
 	/**
 	 * Whether the form is in a loading/submitting state
 	 */
@@ -58,6 +75,10 @@ interface ItemFormProps {
 	 * Callback when cancel button is clicked
 	 */
 	onCancel?: () => void;
+	/**
+	 * Whether the form is in edit mode (shows visual indicators for hidden fields)
+	 */
+	isEditMode?: boolean;
 }
 
 export function ItemForm({
@@ -66,6 +87,7 @@ export function ItemForm({
 	isLoading = false,
 	submitLabel = "Create Item",
 	onCancel,
+	isEditMode = false,
 }: ItemFormProps) {
 	const [imagePreview, setImagePreview] = useState<string | null>(
 		defaultValues?.images?.[0]?.url || null,
@@ -85,16 +107,23 @@ export function ItemForm({
 			name: defaultValues?.name || "",
 			description: defaultValues?.description || "",
 			category: defaultValues?.categoryId?.toString() || "",
-			keywords: defaultValues?.keywords || "",
+			keywords: Array.isArray(defaultValues?.keywords)
+				? defaultValues.keywords.join(", ")
+				: defaultValues?.keywords || "",
 			location: defaultValues?.location || "",
 			dateFound: defaultValues?.dateFound
 				? new Date(defaultValues.dateFound).toISOString().split("T")[0]
 				: new Date().toISOString().split("T")[0],
 			status: defaultValues?.status || "unclaimed",
+			hideLocation: defaultValues?.hideLocation || false,
+			hideDateFound: defaultValues?.hideDateFound || false,
+			securityQuestions: [],
 		},
 	});
 
 	const imageFiles = watch("images");
+	const hideLocation = watch("hideLocation");
+	const hideDateFound = watch("hideDateFound");
 
 	// Update image preview when file changes
 	useEffect(() => {
@@ -150,15 +179,42 @@ export function ItemForm({
 	};
 
 	const handleFormSubmit = async (data: FormData) => {
-		// Convert form data to NewItem format
-		const itemData: NewItem = {
+		// Convert form data to NewItemWithSecurity format
+		const itemData: NewItemWithSecurity = {
 			...data,
 			dateFound: new Date(data.dateFound),
 			images: Array.isArray(data.images)
 				? data.images.filter((file): file is File => file instanceof File)
 				: undefined,
+			securityQuestions: data.securityQuestions,
+			hideLocation: data.hideLocation,
+			hideDateFound: data.hideDateFound,
 		};
 		await onSubmit(itemData);
+	};
+
+	// Extract security question errors from form errors
+	const getSecurityQuestionErrors = () => {
+		if (!errors.securityQuestions) return {};
+
+		const questionErrors: Record<
+			number,
+			{ questionText?: string; options?: string; answer?: string }
+		> = {};
+
+		if (Array.isArray(errors.securityQuestions)) {
+			errors.securityQuestions.forEach((error, index) => {
+				if (error) {
+					questionErrors[index] = {
+						questionText: error.questionText?.message,
+						options: error.options?.message,
+						answer: error.answer?.message,
+					};
+				}
+			});
+		}
+
+		return questionErrors;
 	};
 
 	return (
@@ -246,9 +302,17 @@ export function ItemForm({
 
 			{/* Location Field */}
 			<Field data-invalid={!!errors.location}>
-				<FieldLabel htmlFor="location">
-					Location Found <span className="text-destructive">*</span>
-				</FieldLabel>
+				<div className="flex items-center justify-between">
+					<FieldLabel htmlFor="location">
+						Location Found <span className="text-destructive">*</span>
+					</FieldLabel>
+					{isEditMode && hideLocation && (
+						<div className="flex items-center gap-1 text-muted-foreground text-xs">
+							<EyeOffIcon className="size-3" />
+							<span>Hidden from public</span>
+						</div>
+					)}
+				</div>
 				<Input
 					id="location"
 					{...register("location")}
@@ -261,9 +325,17 @@ export function ItemForm({
 
 			{/* Date Found Field */}
 			<Field data-invalid={!!errors.dateFound}>
-				<FieldLabel htmlFor="dateFound">
-					Date Found <span className="text-destructive">*</span>
-				</FieldLabel>
+				<div className="flex items-center justify-between">
+					<FieldLabel htmlFor="dateFound">
+						Date Found <span className="text-destructive">*</span>
+					</FieldLabel>
+					{isEditMode && hideDateFound && (
+						<div className="flex items-center gap-1 text-muted-foreground text-xs">
+							<EyeOffIcon className="size-3" />
+							<span>Hidden from public</span>
+						</div>
+					)}
+				</div>
 				<Input
 					id="dateFound"
 					type="date"
@@ -274,6 +346,40 @@ export function ItemForm({
 				/>
 				<FieldError>{errors.dateFound?.message}</FieldError>
 			</Field>
+
+			{/* Privacy Controls */}
+			<Controller
+				name="hideLocation"
+				control={control}
+				render={({ field: locationField }) => (
+					<Controller
+						name="hideDateFound"
+						control={control}
+						render={({ field: dateField }) => (
+							<PrivacyControls
+								hideLocation={locationField.value}
+								hideDateFound={dateField.value}
+								onHideLocationChange={locationField.onChange}
+								onHideDateFoundChange={dateField.onChange}
+								disabled={isLoading}
+							/>
+						)}
+					/>
+				)}
+			/>
+
+			{/* Security Questions Builder */}
+			<Controller
+				name="securityQuestions"
+				control={control}
+				render={({ field }) => (
+					<SecurityQuestionsBuilder
+						questions={field.value || []}
+						onChange={field.onChange}
+						errors={getSecurityQuestionErrors()}
+					/>
+				)}
+			/>
 
 			{/* Images Upload Field */}
 			<Field data-invalid={!!errors.images}>

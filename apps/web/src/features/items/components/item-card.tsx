@@ -1,4 +1,4 @@
-import type { LostItem } from "@findhub/shared/types/item";
+import type { PublicLostItem } from "@findhub/shared/types/item";
 import { Calendar, MapPin } from "lucide-react";
 import { motion } from "motion/react";
 import Image from "next/image";
@@ -6,18 +6,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCategories } from "@/features/categories/hooks/use-categories";
 import { formatItemDate } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
+import { ObscuredFieldIndicator } from "./obscured-field-indicator";
 import { StatusBadge } from "./status-badge";
 
 interface ItemCardProps {
-	item: LostItem;
+	item: PublicLostItem;
 	onClick?: () => void;
 	className?: string;
 }
 
 export function ItemCard({ item, onClick, className }: ItemCardProps) {
-	const formattedDate = formatItemDate(item.dateFound);
+	const formattedDate = item.dateFound ? formatItemDate(item.dateFound) : null;
 	const { data: categories } = useCategories();
 	const categoryName = categories?.find((c) => c.id === item.categoryId)?.name;
+	const primaryImage = item.images?.[0];
 
 	return (
 		<motion.div
@@ -31,7 +33,7 @@ export function ItemCard({ item, onClick, className }: ItemCardProps) {
 				)}
 				onClick={onClick}
 			>
-				{item.imageUrl && (
+				{primaryImage && (
 					<div className="relative aspect-video w-full overflow-hidden rounded-t-xl">
 						<motion.div
 							whileHover={{ scale: 1.05 }}
@@ -39,7 +41,7 @@ export function ItemCard({ item, onClick, className }: ItemCardProps) {
 							className="size-full"
 						>
 							<Image
-								src={item.imageUrl}
+								src={primaryImage.url}
 								alt={item.name}
 								fill
 								className="object-cover"
@@ -62,14 +64,28 @@ export function ItemCard({ item, onClick, className }: ItemCardProps) {
 					</p>
 
 					<div className="flex flex-col gap-1 text-muted-foreground text-xs">
-						<div className="flex items-center gap-1.5">
-							<MapPin className="size-3.5" />
-							<span className="line-clamp-1">{item.location}</span>
-						</div>
-						<div className="flex items-center gap-1.5">
-							<Calendar className="size-3.5" />
-							<span>{formattedDate}</span>
-						</div>
+						{item.location ? (
+							<div className="flex items-center gap-1.5">
+								<MapPin className="size-3.5" />
+								<span className="line-clamp-1">{item.location}</span>
+							</div>
+						) : (
+							<div className="flex items-center gap-1.5 text-muted-foreground/70">
+								<MapPin className="size-3.5" />
+								<span className="text-xs italic">Location hidden</span>
+							</div>
+						)}
+						{item.dateFound ? (
+							<div className="flex items-center gap-1.5">
+								<Calendar className="size-3.5" />
+								<span>{formattedDate}</span>
+							</div>
+						) : (
+							<div className="flex items-center gap-1.5 text-muted-foreground/70">
+								<Calendar className="size-3.5" />
+								<span className="text-xs italic">Date hidden</span>
+							</div>
+						)}
 					</div>
 
 					{categoryName && (

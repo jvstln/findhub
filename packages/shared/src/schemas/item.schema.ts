@@ -1,5 +1,12 @@
 // Shared Zod validation schemas for lost items feature
 import { z } from "zod";
+import {
+	privacyControlsSchema,
+	securityQuestionsArraySchema,
+} from "./security-questions.schema";
+
+// Re-export security questions schemas for convenience
+export * from "./security-questions.schema";
 
 export const itemStatusSchema = z.enum([
 	"unclaimed",
@@ -94,3 +101,14 @@ export const imageUpdateSchema = z.object({
 export const imageIdSchema = z.object({
 	id: z.coerce.number().int().positive(),
 });
+
+// Extended item creation schema with security questions and privacy controls
+export const createItemWithSecuritySchema = createItemSchema
+	.extend({
+		securityQuestions: securityQuestionsArraySchema.optional(),
+	})
+	.merge(privacyControlsSchema);
+
+// Extended item update schema with security questions and privacy controls
+export const updateItemWithSecuritySchema =
+	createItemWithSecuritySchema.partial();

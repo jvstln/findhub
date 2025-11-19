@@ -181,9 +181,14 @@ export interface SecurityQuestionInput {
 	displayOrder?: number;
 }
 
-// Extended lost item type with security questions
+// Extended lost item type with security questions (encrypted)
 export type LostItemWithSecurity = LostItemWithImages & {
 	securityQuestions: SecurityQuestion[];
+};
+
+// Extended lost item type with decrypted security questions (admin view)
+export type LostItemWithDecryptedSecurity = LostItemWithImages & {
+	securityQuestions: SecurityQuestionWithDecryptedAnswer[];
 };
 
 // Public view type (filtered)

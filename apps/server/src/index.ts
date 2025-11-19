@@ -6,6 +6,7 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { authMiddleware, getAuthUser } from "./middleware/auth.middleware";
 import { errorHandler } from "./middleware/error.middleware";
+import adminItems from "./routes/admin-item.route";
 import categories from "./routes/category.route";
 import items from "./routes/item.route";
 
@@ -39,6 +40,7 @@ app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 // API routes
 app.route("/api/categories", categories);
 app.route("/api/items", items);
+app.route("/api/admin/items", adminItems);
 
 app.get("/", (c) => {
 	return c.text("OK");

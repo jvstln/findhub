@@ -15,11 +15,12 @@ const items = new Hono();
  * GET /api/items
  * Public endpoint - Search and filter lost items with pagination
  * Query params: keyword, category, location, status, dateFrom, dateTo, page, pageSize
+ * Applies privacy filtering: excludes items from location/date filters when those fields are hidden
  */
 items.get("/", zValidator("query", searchFiltersSchema), async (c) => {
 	try {
 		const filters = c.req.valid("query");
-		const result = await itemsService.getItems(filters);
+		const result = await itemsService.getPublicItems(filters);
 
 		return c.json({
 			success: true,
@@ -43,11 +44,13 @@ items.get("/", zValidator("query", searchFiltersSchema), async (c) => {
 /**
  * GET /api/items/:id
  * Public endpoint - Get single item details by ID
+ * Applies privacy filtering: hides location/date if privacy controls are enabled
+ * Security questions are never included in public responses
  */
 items.get("/:id", zValidator("param", itemIdSchema), async (c) => {
 	try {
 		const { id } = c.req.valid("param");
-		const item = await itemsService.getItemById(id);
+		const item = await itemsService.getPublicItem(id);
 
 		if (!item) {
 			return c.json(
@@ -139,7 +142,7 @@ items.post("/", authMiddleware, async (c) => {
 			keywords: validationResult.data.keywords,
 			location: validationResult.data.location,
 			dateFound: validationResult.data.dateFound,
-			image: image && image.size > 0 ? image : undefined,
+			images: image && image.size > 0 ? [image] : undefined,
 			createdById: user.id,
 		});
 

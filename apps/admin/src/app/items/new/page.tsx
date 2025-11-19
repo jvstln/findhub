@@ -1,6 +1,6 @@
 "use client";
 
-import type { NewItem } from "@findhub/shared/types/item";
+import type { NewItemWithSecurity } from "@findhub/shared/types/item";
 import { ArrowLeft } from "lucide-react";
 import { motion } from "motion/react";
 import type { Route } from "next";
@@ -18,7 +18,7 @@ export default function NewItemPage() {
 	const router = useRouter();
 	const createMutation = useCreateItem();
 
-	const handleSubmit = async (data: NewItem) => {
+	const handleSubmit = async (data: NewItemWithSecurity) => {
 		try {
 			await createMutation.mutateAsync(data);
 			toast.success("Item created successfully");

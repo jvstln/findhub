@@ -1,4 +1,7 @@
-import type { ItemUpdate, NewItem } from "@findhub/shared/types/item";
+import type {
+	ItemUpdateWithSecurity,
+	NewItemWithSecurity,
+} from "@findhub/shared/types/item";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createItem } from "../api/create-item";
 import { deleteItem } from "../api/delete-item";
@@ -14,7 +17,7 @@ export function useCreateItem() {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: (data: NewItem) => createItem(data),
+		mutationFn: (data: NewItemWithSecurity) => createItem(data),
 		onSuccess: () => {
 			// Invalidate items list to refetch with new item
 			queryClient.invalidateQueries({ queryKey: itemsKeys.lists() });
@@ -30,7 +33,7 @@ export function useUpdateItem() {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: ({ id, data }: { id: number; data: ItemUpdate }) =>
+		mutationFn: ({ id, data }: { id: number; data: ItemUpdateWithSecurity }) =>
 			updateItem(id, data),
 		onSuccess: (updatedItem) => {
 			// Invalidate the specific item query

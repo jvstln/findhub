@@ -32,6 +32,22 @@ export default defineConfig({
 			},
 			testMatch: /.*\/(admin-flow|status-workflow|file-upload)\.spec\.ts/,
 		},
+		{
+			name: "api",
+			use: {
+				...devices["Desktop Chrome"],
+				baseURL: "http://localhost:3000",
+			},
+			testMatch: /.*\/security-privacy-api\.spec\.ts/,
+		},
+		{
+			name: "components",
+			use: {
+				...devices["Desktop Chrome"],
+				baseURL: "http://localhost:3002",
+			},
+			testMatch: /.*\/component-tests\.spec\.ts/,
+		},
 	],
 
 	webServer: [

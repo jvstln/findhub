@@ -3,4 +3,8 @@ export { ItemDetail } from "./item-detail";
 export { ItemForm } from "./item-form";
 export { ItemGrid } from "./item-grid";
 export { ItemTable } from "./item-table";
+export { PrivacyControls } from "./privacy-controls";
+export { PrivacyStatusBadge } from "./privacy-status-badge";
+export { SecurityQuestionsBuilder } from "./security-questions-builder";
+export { SecurityQuestionsDisplay } from "./security-questions-display";
 export { StatusBadge } from "./status-badge";

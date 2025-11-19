@@ -1,14 +1,14 @@
 "use client";
 
 import type { PaginatedResponse } from "@findhub/shared/types";
-import type { LostItem } from "@findhub/shared/types/item";
+import type { PublicLostItem } from "@findhub/shared/types/item";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ItemCardSkeleton } from "@/components/ui/item-card-skeleton";
 import { ItemGrid } from "@/features/items/components/item-grid";
 
 interface SearchResultsProps {
-	data: PaginatedResponse<LostItem>;
+	data: PaginatedResponse<PublicLostItem>;
 	isLoading?: boolean;
 	hasActiveFilters?: boolean;
 	onPageChange: (page: number) => void;

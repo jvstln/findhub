@@ -1,14 +1,15 @@
-import type { LostItem } from "@findhub/shared/types/item";
+import type { PublicLostItem } from "@findhub/shared/types/item";
 import { Calendar, Clock, MapPin, Tag } from "lucide-react";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useCategories } from "@/features/categories/hooks/use-categories";
 import { formatItemDateLong, formatItemDateTime } from "@/lib/date-utils";
+import { ObscuredFieldIndicator } from "./obscured-field-indicator";
 import { StatusBadge } from "./status-badge";
 
 interface ItemDetailProps {
-	item: LostItem;
+	item: PublicLostItem;
 	showClaimInstructions?: boolean;
 }
 
@@ -16,18 +17,21 @@ export function ItemDetail({
 	item,
 	showClaimInstructions = true,
 }: ItemDetailProps) {
-	const formattedDateFound = formatItemDateLong(item.dateFound);
+	const formattedDateFound = item.dateFound
+		? formatItemDateLong(item.dateFound)
+		: null;
 	const formattedCreatedAt = formatItemDateTime(item.createdAt);
 	const { data: categories } = useCategories();
 	const categoryName = categories?.find((c) => c.id === item.categoryId)?.name;
+	const primaryImage = item.images?.[0];
 
 	return (
 		<div className="space-y-6">
 			{/* Image Section */}
-			{item.imageUrl && (
+			{primaryImage && (
 				<div className="relative aspect-video w-full overflow-hidden rounded-xl border">
 					<Image
-						src={item.imageUrl}
+						src={primaryImage.url}
 						alt={item.name}
 						fill
 						className="object-contain"
@@ -68,23 +72,39 @@ export function ItemDetail({
 
 					{/* Details Grid */}
 					<div className="grid gap-4 sm:grid-cols-2">
-						<div className="flex items-start gap-3">
-							<MapPin className="mt-0.5 size-5 text-muted-foreground" />
-							<div>
-								<p className="font-medium text-sm">Location Found</p>
-								<p className="text-muted-foreground text-sm">{item.location}</p>
+						{/* Location - conditionally render based on privacy settings */}
+						{item.location ? (
+							<div className="flex items-start gap-3">
+								<MapPin className="mt-0.5 size-5 text-muted-foreground" />
+								<div>
+									<p className="font-medium text-sm">Location Found</p>
+									<p className="text-muted-foreground text-sm">
+										{item.location}
+									</p>
+								</div>
 							</div>
-						</div>
+						) : (
+							<div className="sm:col-span-2">
+								<ObscuredFieldIndicator fieldName="location" />
+							</div>
+						)}
 
-						<div className="flex items-start gap-3">
-							<Calendar className="mt-0.5 size-5 text-muted-foreground" />
-							<div>
-								<p className="font-medium text-sm">Date Found</p>
-								<p className="text-muted-foreground text-sm">
-									{formattedDateFound}
-								</p>
+						{/* Date Found - conditionally render based on privacy settings */}
+						{item.dateFound ? (
+							<div className="flex items-start gap-3">
+								<Calendar className="mt-0.5 size-5 text-muted-foreground" />
+								<div>
+									<p className="font-medium text-sm">Date Found</p>
+									<p className="text-muted-foreground text-sm">
+										{formattedDateFound}
+									</p>
+								</div>
 							</div>
-						</div>
+						) : (
+							<div className="sm:col-span-2">
+								<ObscuredFieldIndicator fieldName="date found" />
+							</div>
+						)}
 
 						{item.keywords && (
 							<div className="flex items-start gap-3">

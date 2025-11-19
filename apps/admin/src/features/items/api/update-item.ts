@@ -1,5 +1,5 @@
 import type {
-	ItemUpdate,
+	ItemUpdateWithSecurity,
 	LostItemWithImages,
 } from "@findhub/shared/types/item";
 import { patch, postFormData } from "@/lib/api-client";
@@ -12,7 +12,7 @@ import { patch, postFormData } from "@/lib/api-client";
  */
 export async function updateItem(
 	id: number,
-	data: ItemUpdate,
+	data: ItemUpdateWithSecurity,
 ): Promise<LostItemWithImages> {
 	// If there are image files, use FormData
 	if (data.images && data.images.length > 0) {
@@ -26,6 +26,15 @@ export async function updateItem(
 			formData.append("dateFound", data.dateFound.toISOString());
 		if (data.keywords) formData.append("keywords", data.keywords);
 		if (data.status) formData.append("status", data.status);
+		if (data.hideLocation !== undefined)
+			formData.append("hideLocation", String(data.hideLocation));
+		if (data.hideDateFound !== undefined)
+			formData.append("hideDateFound", String(data.hideDateFound));
+		if (data.securityQuestions)
+			formData.append(
+				"securityQuestions",
+				JSON.stringify(data.securityQuestions),
+			);
 
 		for (const image of data.images) {
 			formData.append("images", image);
@@ -47,6 +56,12 @@ export async function updateItem(
 		updateData.dateFound = data.dateFound.toISOString();
 	if (data.keywords !== undefined) updateData.keywords = data.keywords;
 	if (data.status !== undefined) updateData.status = data.status;
+	if (data.hideLocation !== undefined)
+		updateData.hideLocation = data.hideLocation;
+	if (data.hideDateFound !== undefined)
+		updateData.hideDateFound = data.hideDateFound;
+	if (data.securityQuestions !== undefined)
+		updateData.securityQuestions = data.securityQuestions;
 
 	return patch<LostItemWithImages>(`/api/items/${id}`, updateData);
 }

@@ -8,7 +8,7 @@ import { use } from "react";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ItemDetail } from "@/features/items/components/item-detail";
-import { useItem } from "@/features/items/hooks/use-item";
+import { useItemWithSecurity } from "@/features/items/hooks/use-item-with-security";
 
 interface ItemDetailPageProps {
 	params: Promise<{
@@ -20,8 +20,8 @@ export default function ItemDetailPage({ params }: ItemDetailPageProps) {
 	const resolvedParams = use(params);
 	const itemId = Number.parseInt(resolvedParams.id, 10);
 
-	// Fetch item data
-	const { data: item, isLoading, error } = useItem(itemId);
+	// Fetch item data with security questions
+	const { data: item, isLoading, error } = useItemWithSecurity(itemId);
 
 	// Loading state
 	if (isLoading) {

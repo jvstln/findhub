@@ -13,6 +13,10 @@
 			"types": "./dist/schemas/item.schema.d.ts",
 			"default": "./src/schemas/item.schema.ts"
 		},
+		"./schemas/*": {
+			"types": "./dist/schemas/*.schema.d.ts",
+			"default": "./src/schemas/*.schema.ts"
+		},
 		"./utils": {
 			"types": "./dist/utils/util.d.ts",
 			"default": "./src/utils/util.ts"

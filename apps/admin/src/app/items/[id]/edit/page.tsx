@@ -1,6 +1,9 @@
 "use client";
 
-import type { ItemStatus, NewItem } from "@findhub/shared/types/item";
+import type {
+	ItemStatus,
+	NewItemWithSecurity,
+} from "@findhub/shared/types/item";
 import { ArrowLeft, Loader2, Trash2 } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
@@ -67,7 +70,7 @@ export default function EditItemPage({ params }: EditItemPageProps) {
 	const deleteMutation = useDeleteItem();
 
 	// Handle form submission
-	const handleSubmit = async (data: NewItem) => {
+	const handleSubmit = async (data: NewItemWithSecurity) => {
 		try {
 			await updateMutation.mutateAsync({
 				id: itemId,
@@ -80,6 +83,9 @@ export default function EditItemPage({ params }: EditItemPageProps) {
 					dateFound: data.dateFound,
 					images: data.images,
 					status: selectedStatus || undefined,
+					hideLocation: data.hideLocation,
+					hideDateFound: data.hideDateFound,
+					securityQuestions: data.securityQuestions,
 				},
 			});
 
@@ -284,6 +290,7 @@ export default function EditItemPage({ params }: EditItemPageProps) {
 								isLoading={updateMutation.isPending}
 								submitLabel="Update Item"
 								onCancel={handleCancel}
+								isEditMode={true}
 							/>
 						</CardContent>
 					</Card>
