@@ -5,8 +5,8 @@ import type { Route } from "next";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Button } from "./ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
+import { Button } from "../../ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "../../ui/sheet";
 
 export function Header() {
 	const pathname = usePathname();

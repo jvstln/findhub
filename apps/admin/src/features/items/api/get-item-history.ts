@@ -1,5 +1,5 @@
 import type { StatusHistoryEntry } from "@findhub/shared/types/item";
-import { get } from "@/lib/api-client";
+import { get } from "@findhub/ui/lib/api-client";
 
 /**
  * Fetch the status change history for a lost item

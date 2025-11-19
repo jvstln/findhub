@@ -6,7 +6,7 @@ import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { PageHeader } from "@/components/layout/page-header";
+import { PageHeader } from "@findhub/ui/components/layout/admin";
 import { ErrorState } from "@/components/shared/error-state";
 import { FilterBar } from "@/components/shared/filter-bar";
 import { StatsCard } from "@/components/shared/stats-card";

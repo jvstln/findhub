@@ -9,7 +9,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { getErrorMessage } from "@/lib/api-client";
+import { getErrorMessage } from "@findhub/ui/lib/api-client";
 
 interface ErrorStateProps {
 	error: unknown;

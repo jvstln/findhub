@@ -10,7 +10,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useState } from "react";
 import { toast } from "sonner";
-import { PageHeader } from "@/components/layout/page-header";
+import { PageHeader } from "@findhub/ui/components/layout/admin";
 import { ErrorState } from "@/components/shared/error-state";
 import {
 	AlertDialog,
@@ -39,7 +39,7 @@ import {
 	useDeleteItem,
 	useUpdateItem,
 } from "@/features/items/hooks/use-item-mutations";
-import { getErrorMessage } from "@/lib/api-client";
+import { getErrorMessage } from "@findhub/ui/lib/api-client";
 
 interface EditItemPageProps {
 	params: Promise<{

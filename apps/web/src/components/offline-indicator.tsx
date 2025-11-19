@@ -1,7 +1,7 @@
 "use client";
 
 import { CheckCircle2, WifiOff } from "lucide-react";
-import { useOnlineStatus } from "@/hooks/use-online-status";
+import { useOnlineStatus } from "@findhub/ui/hooks";
 
 export function OfflineIndicator() {
 	const { isOnline, wasOffline } = useOnlineStatus();

@@ -1,5 +1,5 @@
 import type { LostItemWithDecryptedSecurity } from "@findhub/db/schemas/items";
-import { get } from "@/lib/api-client";
+import { get } from "@findhub/ui/lib/api-client";
 
 /**
  * Fetch a single lost item by ID with security questions (admin only)

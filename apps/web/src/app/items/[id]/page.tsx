@@ -9,7 +9,7 @@ import { CachedDataBadge } from "@/components/cached-data-badge";
 import { Button } from "@/components/ui/button";
 import { ItemDetail } from "@/features/items/components/item-detail";
 import { useItem } from "@/features/items/hooks/use-item";
-import { useOnlineStatus } from "@/hooks/use-online-status";
+import { useOnlineStatus } from "@findhub/ui/hooks";
 
 export default function ItemDetailPage({ params }: { params: { id: string } }) {
 	const itemId = Number.parseInt(params.id, 10);

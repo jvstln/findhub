@@ -10,12 +10,13 @@ import { ItemGrid } from "@/features/items/components/item-grid";
 interface SearchResultsProps {
 	data: PaginatedResponse<PublicLostItem>;
 	isLoading?: boolean;
+	isFetching?: boolean;
 	hasActiveFilters?: boolean;
 	onPageChange: (page: number) => void;
 }
 
 interface EmptyStateMessageProps {
-	isLoading: boolean;
+	isFetching: boolean;
 	hasActiveFilters: boolean;
 	total: number;
 }
@@ -25,20 +26,20 @@ interface EmptyStateMessageProps {
  * filter state, and data availability
  */
 function getEmptyStateMessage({
-	isLoading,
+	isFetching,
 	hasActiveFilters,
 	total,
 }: EmptyStateMessageProps): string {
-	if (isLoading) {
-		return "Loading results...";
-	}
-
-	if (total === 0 && !hasActiveFilters) {
+	if (total === 0 && isFetching) {
 		return "No items in database";
 	}
 
+	if (total === 0 && !hasActiveFilters) {
+		return "Type to search for items";
+	}
+
 	if (total === 0 && hasActiveFilters) {
-		return "No matches found";
+		return "No items match your filters";
 	}
 
 	return "Type to search for items";
@@ -51,6 +52,7 @@ function getEmptyStateMessage({
 export function SearchResults({
 	data,
 	isLoading = false,
+	isFetching = false,
 	hasActiveFilters = false,
 	onPageChange,
 }: SearchResultsProps) {
@@ -86,7 +88,7 @@ export function SearchResults({
 
 	if (items.length === 0) {
 		const message = getEmptyStateMessage({
-			isLoading,
+			isFetching,
 			hasActiveFilters,
 			total,
 		});

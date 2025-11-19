@@ -1,5 +1,5 @@
 import type { PublicLostItem } from "@findhub/shared/types/item";
-import { get } from "@/lib/api-client";
+import { get } from "@findhub/ui/lib/api-client";
 
 /**
  * Fetch a single lost item by ID (public view with privacy filtering)

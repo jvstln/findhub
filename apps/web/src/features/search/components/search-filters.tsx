@@ -1,5 +1,6 @@
 "use client";
 
+import type { ItemCategory } from "@findhub/shared/types/category";
 import type { SearchFilters as SearchFiltersType } from "@findhub/shared/types/item";
 import { Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,7 @@ interface SearchFiltersProps {
 	onDateToChange: (date: Date | undefined) => void;
 	onReset: () => void;
 	hasActiveFilters: boolean;
-	categories?: string[];
+	categories?: ItemCategory[];
 	locations?: string[];
 }
 
@@ -101,8 +102,8 @@ export function SearchFilters({
 						<SelectContent>
 							<SelectItem value="all">All categories</SelectItem>
 							{categories.map((category) => (
-								<SelectItem key={category} value={category}>
-									{category}
+								<SelectItem key={category.id} value={category.id.toString()}>
+									{category.name}
 								</SelectItem>
 							))}
 						</SelectContent>

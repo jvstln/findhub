@@ -2,7 +2,7 @@ import type {
 	ItemCategory,
 	UpdateCategoryInput,
 } from "@findhub/shared/types/category";
-import { patch } from "@/lib/api-client";
+import { patch } from "@findhub/ui/lib/api-client";
 
 /**
  * Update an existing category

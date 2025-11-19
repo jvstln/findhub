@@ -1,8 +1,9 @@
 "use client";
 
+import type React from "react";
 import { usePathname } from "next/navigation";
-import { AppSidebar } from "./layout/app-sidebar";
-import { SidebarInset, SidebarProvider } from "./ui/sidebar";
+import { SidebarInset, SidebarProvider } from "../../ui/sidebar";
+import { AppSidebar } from "./app-sidebar";
 
 interface AdminLayoutProps {
 	children: React.ReactNode;

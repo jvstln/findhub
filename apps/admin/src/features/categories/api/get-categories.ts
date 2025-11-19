@@ -1,5 +1,5 @@
 import type { ItemCategory } from "@findhub/shared/types/category";
-import { get } from "@/lib/api-client";
+import { get } from "@findhub/ui/lib/api-client";
 
 /**
  * Fetch all categories

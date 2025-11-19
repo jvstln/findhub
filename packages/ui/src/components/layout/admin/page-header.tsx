@@ -1,7 +1,8 @@
 "use client";
 
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { cn } from "@/lib/utils";
+import type React from "react";
+import { SidebarTrigger } from "../../ui/sidebar";
+import { cn } from "../../../lib/utils";
 
 interface PageHeaderProps {
 	title: string;

@@ -1,27 +1,25 @@
 import axios, { type AxiosError, type AxiosRequestConfig } from "axios";
 
 const API_BASE_URL =
-	process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
+	process.env.NEXT_PUBLIC_SERVER_URL ||
+	process.env.NEXT_PUBLIC_API_URL ||
+	"http://localhost:3000";
 
 /**
- * Axios instance configured with base URL and default settings
+ * Shared Axios client configured for the FindHub frontend applications.
  */
 export const apiClient = axios.create({
 	baseURL: API_BASE_URL,
 	headers: {
 		"Content-Type": "application/json",
 	},
-	withCredentials: true, // Important for Better Auth session cookies
-	timeout: 30000, // 30 second timeout
+	withCredentials: true,
+	timeout: 30000,
 });
 
-/**
- * Response interceptor for global error handling
- */
 apiClient.interceptors.response.use(
 	(response) => response,
 	async (error: AxiosError) => {
-		// Log errors in development
 		if (process.env.NODE_ENV === "development") {
 			console.error("API Error:", {
 				url: error.config?.url,
@@ -31,31 +29,24 @@ apiClient.interceptors.response.use(
 			});
 		}
 
-		// Don't retry if offline
 		if (!navigator.onLine) {
 			return Promise.reject(error);
 		}
 
-		// Retry logic for network errors and 5xx errors
 		const config = error.config as AxiosRequestConfig & { _retry?: number };
-		if (!config || config._retry === undefined) {
-			if (config) {
-				config._retry = 0;
-			}
+		if (config && config._retry === undefined) {
+			config._retry = 0;
 		}
 
 		const shouldRetry =
 			config &&
-			config._retry !== undefined &&
-			config._retry < 2 &&
+			(config._retry ?? 0) < 2 &&
 			(error.code === "ERR_NETWORK" ||
 				error.code === "ECONNABORTED" ||
 				(error.response?.status ?? 0) >= 500);
 
 		if (shouldRetry && config) {
 			config._retry = (config._retry || 0) + 1;
-
-			// Exponential backoff: 1s, 2s
 			const delay = 1000 * config._retry;
 			await new Promise((resolve) => setTimeout(resolve, delay));
 
@@ -66,9 +57,6 @@ apiClient.interceptors.response.use(
 	},
 );
 
-/**
- * API error type for consistent error handling
- */
 export interface ApiError {
 	success: false;
 	error: {
@@ -78,26 +66,17 @@ export interface ApiError {
 	};
 }
 
-/**
- * API success response type
- */
 export interface ApiResponse<T> {
 	success: true;
 	data: T;
 	message?: string;
 }
 
-/**
- * Validation error details from Zod
- */
 export interface ValidationErrorDetails {
 	field: string;
 	message: string;
 }
 
-/**
- * Type guard to check if error is an API error
- */
 export function isApiError(error: unknown): error is AxiosError<ApiError> {
 	return (
 		axios.isAxiosError(error) &&
@@ -109,18 +88,12 @@ export function isApiError(error: unknown): error is AxiosError<ApiError> {
 	);
 }
 
-/**
- * Check if error is a validation error
- */
 export function isValidationError(error: unknown): boolean {
 	return (
 		isApiError(error) && error.response?.data.error.code === "VALIDATION_ERROR"
 	);
 }
 
-/**
- * Extract validation error details from API error
- */
 export function getValidationErrors(
 	error: unknown,
 ): ValidationErrorDetails[] | null {
@@ -141,20 +114,14 @@ export function getValidationErrors(
 	return null;
 }
 
-/**
- * Extract error message from various error types
- */
 export function getErrorMessage(error: unknown): string {
-	// Check if offline
 	if (!navigator.onLine) {
 		return "You are offline. Please check your internet connection.";
 	}
 
-	// API error with message
 	if (isApiError(error)) {
 		const apiError = error.response?.data.error;
 
-		// For validation errors, provide a more helpful message
 		if (apiError?.code === "VALIDATION_ERROR") {
 			const validationErrors = getValidationErrors(error);
 			if (validationErrors && validationErrors.length > 0) {
@@ -166,7 +133,6 @@ export function getErrorMessage(error: unknown): string {
 		return apiError?.message || "An error occurred";
 	}
 
-	// Network errors
 	if (axios.isAxiosError(error)) {
 		if (error.code === "ERR_NETWORK") {
 			return "Network error. Please check your connection and try again.";
@@ -189,7 +155,6 @@ export function getErrorMessage(error: unknown): string {
 		return error.message || "Network error occurred";
 	}
 
-	// Generic errors
 	if (error instanceof Error) {
 		return error.message;
 	}
@@ -197,9 +162,6 @@ export function getErrorMessage(error: unknown): string {
 	return "An unexpected error occurred";
 }
 
-/**
- * Format error for user display with actionable message
- */
 export function formatErrorForUser(error: unknown): {
 	title: string;
 	message: string;
@@ -207,7 +169,6 @@ export function formatErrorForUser(error: unknown): {
 } {
 	const message = getErrorMessage(error);
 
-	// Determine if error is retryable
 	const canRetry =
 		!navigator.onLine ||
 		(axios.isAxiosError(error) &&
@@ -215,7 +176,6 @@ export function formatErrorForUser(error: unknown): {
 				error.code === "ECONNABORTED" ||
 				(error.response?.status ?? 0) >= 500));
 
-	// Determine title based on error type
 	let title = "Error";
 	if (!navigator.onLine) {
 		title = "Offline";
@@ -232,9 +192,6 @@ export function formatErrorForUser(error: unknown): {
 	return { title, message, canRetry };
 }
 
-/**
- * Generic GET request
- */
 export async function get<T>(
 	url: string,
 	config?: AxiosRequestConfig,
@@ -243,9 +200,6 @@ export async function get<T>(
 	return response.data.data;
 }
 
-/**
- * Generic POST request
- */
 export async function post<T>(
 	url: string,
 	data?: unknown,
@@ -255,9 +209,6 @@ export async function post<T>(
 	return response.data.data;
 }
 
-/**
- * Generic PATCH request
- */
 export async function patch<T>(
 	url: string,
 	data?: unknown,
@@ -267,9 +218,6 @@ export async function patch<T>(
 	return response.data.data;
 }
 
-/**
- * Generic DELETE request
- */
 export async function del<T>(
 	url: string,
 	config?: AxiosRequestConfig,
@@ -278,9 +226,6 @@ export async function del<T>(
 	return response.data.data;
 }
 
-/**
- * POST request with FormData (for file uploads)
- */
 export async function postFormData<T>(
 	url: string,
 	formData: FormData,
@@ -293,5 +238,7 @@ export async function postFormData<T>(
 			"Content-Type": "multipart/form-data",
 		},
 	});
+
 	return response.data.data;
 }
+

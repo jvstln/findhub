@@ -2,7 +2,7 @@ import type {
 	CreateCategoryInput,
 	ItemCategory,
 } from "@findhub/shared/types/category";
-import { post } from "@/lib/api-client";
+import { post } from "@findhub/ui/lib/api-client";
 
 /**
  * Create a new category

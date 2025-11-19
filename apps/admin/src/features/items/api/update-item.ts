@@ -2,7 +2,7 @@ import type {
 	ItemUpdateWithSecurity,
 	LostItemWithImages,
 } from "@findhub/shared/types/item";
-import { patch, postFormData } from "@/lib/api-client";
+import { patch, postFormData } from "@findhub/ui/lib/api-client";
 
 /**
  * Update an existing lost item

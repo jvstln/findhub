@@ -10,7 +10,7 @@ import { SearchBar } from "@/features/search/components/search-bar";
 import { SearchFilters } from "@/features/search/components/search-filters";
 import { SearchResults } from "@/features/search/components/search-results";
 import { useSearch } from "@/features/search/hooks/use-search";
-import { useOnlineStatus } from "@/hooks/use-online-status";
+import { useOnlineStatus } from "@findhub/ui/hooks";
 
 // Common locations for filtering
 const COMMON_LOCATIONS = [
@@ -49,6 +49,7 @@ export default function SearchPage() {
 		page: 1,
 		pageSize: 20,
 		totalPages: 0,
+		offset: 0,
 	};
 
 	return (
@@ -101,7 +102,7 @@ export default function SearchPage() {
 							onDateToChange={setDateTo}
 							onReset={resetFilters}
 							hasActiveFilters={hasActiveFilters}
-							categories={categories?.map((c) => c.name) || []}
+							categories={categories || []}
 							locations={COMMON_LOCATIONS}
 						/>
 					</motion.aside>
@@ -124,6 +125,7 @@ export default function SearchPage() {
 							<SearchResults
 								data={data || defaultResponse}
 								isLoading={isLoading}
+								isFetching={isFetching}
 								hasActiveFilters={hasActiveFilters}
 								onPageChange={setPage}
 							/>

@@ -1,6 +1,6 @@
 import type { PaginatedResponse } from "@findhub/shared/types";
 import type { PublicLostItem, SearchFilters } from "@findhub/shared/types/item";
-import { get } from "@/lib/api-client";
+import { get } from "@findhub/ui/lib/api-client";
 
 /**
  * Fetch lost items with optional search filters and pagination (public view with privacy filtering)
@@ -13,7 +13,7 @@ export async function getItems(
 	const params = new URLSearchParams();
 
 	if (filters?.query) params.append("keyword", filters.query);
-	if (filters?.categoryId) params.append("category", filters.categoryId);
+	if (filters?.categoryId) params.append("categoryId", filters.categoryId);
 	if (filters?.location) params.append("location", filters.location);
 	if (filters?.status) params.append("status", filters.status);
 	if (filters?.dateFrom)

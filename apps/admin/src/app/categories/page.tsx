@@ -4,7 +4,7 @@ import type { ItemCategory } from "@findhub/shared/types/category";
 import { Plus, Tag } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { PageHeader } from "@/components/layout/page-header";
+import { PageHeader } from "@findhub/ui/components/layout/admin";
 import { ErrorState } from "@/components/shared/error-state";
 import { StatsCard } from "@/components/shared/stats-card";
 import {
@@ -35,7 +35,7 @@ import {
 	useDeleteCategory,
 	useUpdateCategory,
 } from "@/features/categories/hooks/use-category-mutations";
-import { getErrorMessage } from "@/lib/api-client";
+import { getErrorMessage } from "@findhub/ui/lib/api-client";
 
 type DialogMode = "create" | "edit" | null;
 

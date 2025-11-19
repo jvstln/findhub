@@ -1,8 +1,10 @@
 "use client";
 
-import { LayoutDashboard, LogOut, Package, Settings, Tags } from "lucide-react";
+import { LayoutDashboard, LogOut, Package, Tags } from "lucide-react";
+import type { Route } from "next";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import * as React from "react";
 import {
 	Sidebar,
 	SidebarContent,
@@ -15,12 +17,12 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 	useSidebar,
-} from "@/components/ui/sidebar";
+} from "../../ui/sidebar";
 
 interface NavigationItem {
 	title: string;
 	icon: React.ComponentType<{ className?: string }>;
-	href: string;
+	href: Route;
 }
 
 const NAVIGATION_ITEMS: NavigationItem[] = [
@@ -42,11 +44,6 @@ const NAVIGATION_ITEMS: NavigationItem[] = [
 ] as const;
 
 const FOOTER_ITEMS: NavigationItem[] = [
-	{
-		title: "Settings",
-		icon: Settings,
-		href: "/settings",
-	},
 	{
 		title: "Logout",
 		icon: LogOut,

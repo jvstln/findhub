@@ -2,9 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "../index.css";
 import { ErrorBoundary } from "@/components/error-boundary";
-import { LayoutWrapper } from "@/components/layout-wrapper";
 import { OfflineIndicator } from "@/components/offline-indicator";
 import Providers from "@/components/providers";
+import { LayoutWrapper } from "@findhub/ui/components/layout/public";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",

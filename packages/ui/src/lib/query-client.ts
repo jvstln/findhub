@@ -1,8 +1,5 @@
 import { type DefaultOptions, QueryClient } from "@tanstack/react-query";
 
-/**
- * Default options for TanStack Query
- */
 const queryConfig: DefaultOptions = {
 	queries: {
 		refetchOnWindowFocus: true,
@@ -29,18 +26,12 @@ const queryConfig: DefaultOptions = {
 	},
 };
 
-/**
- * Create a new QueryClient instance with default configuration
- */
 export function makeQueryClient() {
 	return new QueryClient({
 		defaultOptions: queryConfig,
 	});
 }
 
-/**
- * Singleton QueryClient instance for client-side usage
- */
 let browserQueryClient: QueryClient | undefined;
 
 export function getQueryClient() {
@@ -54,3 +45,4 @@ export function getQueryClient() {
 
 	return browserQueryClient;
 }
+

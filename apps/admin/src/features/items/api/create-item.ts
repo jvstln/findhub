@@ -2,7 +2,7 @@ import type {
 	LostItemWithImages,
 	NewItemWithSecurity,
 } from "@findhub/shared/types/item";
-import { postFormData } from "@/lib/api-client";
+import { postFormData } from "@findhub/ui/lib/api-client";
 
 /**
  * Create a new lost item with optional multiple image uploads, security questions, and privacy controls

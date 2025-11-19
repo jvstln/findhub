@@ -1,4 +1,4 @@
-import { del } from "@/lib/api-client";
+import { del } from "@findhub/ui/lib/api-client";
 
 /**
  * Delete a category
