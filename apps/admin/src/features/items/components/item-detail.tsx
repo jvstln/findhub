@@ -1,5 +1,6 @@
 import type { LostItemWithDecryptedSecurity } from "@findhub/db/schemas/items";
 import type { LostItemWithImages } from "@findhub/shared/types/item";
+import { formatItemDateLong, formatItemDateTime } from "@findhub/shared/utils";
 import { Badge } from "@findhub/ui/components/ui/badge";
 import {
 	Card,
@@ -11,7 +12,6 @@ import { Separator } from "@findhub/ui/components/ui/separator";
 import { Calendar, Clock, EyeOffIcon, MapPin, Tag } from "lucide-react";
 import Image from "next/image";
 import { useCategories } from "@/features/categories/hooks/use-categories";
-import { formatItemDateLong, formatItemDateTime } from "@/lib/date-utils";
 import { SecurityQuestionsDisplay } from "./security-questions-display";
 import { StatusBadge } from "./status-badge";
 
@@ -149,7 +149,7 @@ export function ItemDetail({
 								<div>
 									<p className="font-medium text-sm">Keywords</p>
 									<p className="text-muted-foreground text-sm">
-										{item.keywords}
+										{item.keywords.join(", ")}
 									</p>
 								</div>
 							</div>

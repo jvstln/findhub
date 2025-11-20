@@ -79,6 +79,10 @@ export default function AdminDashboardPage() {
 		return Array.from(uniqueCategoryIds).sort((a, b) => a - b);
 	}, [data]);
 
+	const handleView = (item: LostItem) => {
+		router.push(`/items/${item.id}` as Route);
+	};
+
 	const handleEdit = (item: LostItem) => {
 		router.push(`/items/${item.id}/edit` as Route);
 	};
@@ -237,6 +241,7 @@ export default function AdminDashboardPage() {
 					<CardContent>
 						<ItemTable
 							items={data?.data || []}
+							onView={handleView}
 							onEdit={handleEdit}
 							onDelete={handleDelete}
 							onStatusChange={handleStatusChange}

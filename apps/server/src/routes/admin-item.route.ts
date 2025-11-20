@@ -1,8 +1,8 @@
 import {
-	createItemWithSecuritySchema,
+	createItemSchema,
 	itemIdSchema,
 	securityQuestionsArraySchema,
-	updateItemWithSecuritySchema,
+	updateItemSchema,
 } from "@findhub/shared/schemas";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
@@ -72,7 +72,7 @@ adminItems.post("/", async (c) => {
 		}
 
 		// Validate input data
-		const validationResult = createItemWithSecuritySchema.safeParse({
+		const validationResult = createItemSchema.safeParse({
 			name,
 			description,
 			category,
@@ -103,8 +103,8 @@ adminItems.post("/", async (c) => {
 		const item = await itemsService.createItem({
 			name: validationResult.data.name,
 			description: validationResult.data.description,
-			categoryId: validationResult.data.category
-				? Number.parseInt(validationResult.data.category, 10)
+			categoryId: validationResult.data.categoryId
+				? Number.parseInt(validationResult.data.categoryId, 10)
 				: null,
 			keywords: validationResult.data.keywords,
 			location: validationResult.data.location,
@@ -212,6 +212,7 @@ adminItems.patch("/:id", zValidator("param", itemIdSchema), async (c) => {
 
 		// Check if item exists
 		const existingItem = await itemsService.getItemById(id);
+
 		if (!existingItem) {
 			return c.json(
 				{
@@ -291,7 +292,7 @@ adminItems.patch("/:id", zValidator("param", itemIdSchema), async (c) => {
 			updateData.hideDateFound = hideDateFoundStr === "true";
 
 		// Validate update data
-		const validationResult = updateItemWithSecuritySchema.safeParse(updateData);
+		const validationResult = updateItemSchema.safeParse(updateData);
 
 		if (!validationResult.success) {
 			return c.json(
@@ -345,9 +346,9 @@ adminItems.patch("/:id", zValidator("param", itemIdSchema), async (c) => {
 				| "claimed"
 				| "returned"
 				| "archived";
-		if (validationResult.data.category) {
+		if (validationResult.data.categoryId) {
 			updateInput.categoryId = Number.parseInt(
-				validationResult.data.category,
+				validationResult.data.categoryId,
 				10,
 			);
 		}

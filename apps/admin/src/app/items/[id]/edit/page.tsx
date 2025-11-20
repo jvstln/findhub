@@ -2,7 +2,8 @@
 
 import type {
 	ItemStatus,
-	NewItemWithSecurity,
+	LostItemWithDecryptedSecurity,
+	NewItem,
 } from "@findhub/shared/types/item";
 import {
 	AlertDialog,
@@ -32,8 +33,8 @@ import { getErrorMessage } from "@findhub/ui/lib/api-client";
 import { ArrowLeft, Loader2, Trash2 } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { use, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
 import { ErrorState } from "@/components/shared/error-state";
@@ -45,12 +46,6 @@ import {
 	useUpdateItem,
 } from "@/features/items/hooks/use-item-mutations";
 
-interface EditItemPageProps {
-	params: Promise<{
-		id: string;
-	}>;
-}
-
 const STATUS_OPTIONS: { value: ItemStatus; label: string }[] = [
 	{ value: "unclaimed", label: "Unclaimed" },
 	{ value: "claimed", label: "Claimed" },
@@ -58,30 +53,40 @@ const STATUS_OPTIONS: { value: ItemStatus; label: string }[] = [
 	{ value: "archived", label: "Archived" },
 ];
 
-export default function EditItemPage({ params }: EditItemPageProps) {
+export default function EditItemPage() {
 	const router = useRouter();
-	const resolvedParams = use(params);
-	const itemId = Number.parseInt(resolvedParams.id, 10);
+	const params = useParams();
+	const itemId = Number.parseInt(String(params.id), 10);
+
+	console.log(itemId);
 
 	const [selectedStatus, setSelectedStatus] = useState<ItemStatus | null>(null);
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-	// Fetch item data
-	const { data: item, isLoading: isLoadingItem, error } = useItem(itemId);
+	// Fetch item data (with decrypted security questions)
+	const {
+		data: item,
+		isLoading: isLoadingItem,
+		error,
+	} = useItem(itemId) as {
+		data: LostItemWithDecryptedSecurity | undefined;
+		isLoading: boolean;
+		error: Error | null;
+	};
 
 	// Mutations
 	const updateMutation = useUpdateItem();
 	const deleteMutation = useDeleteItem();
 
 	// Handle form submission
-	const handleSubmit = async (data: NewItemWithSecurity) => {
+	const handleSubmit = async (data: NewItem) => {
 		try {
 			await updateMutation.mutateAsync({
 				id: itemId,
 				data: {
 					name: data.name,
 					description: data.description,
-					category: data.category,
+					categoryId: data.categoryId,
 					keywords: data.keywords,
 					location: data.location,
 					dateFound: data.dateFound,

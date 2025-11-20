@@ -35,9 +35,7 @@ function generateUniqueFilename(originalFilename: string): string {
  * @param file - The image file to upload
  * @returns Object containing the public URL and storage key
  */
-export async function uploadItemImage(
-	file: File,
-): Promise<{ url: string; key: string }> {
+export async function uploadItemImage(file: File) {
 	// Validate file
 	validateFile(file);
 
@@ -64,7 +62,39 @@ export async function uploadItemImage(
 	return {
 		url: publicUrl,
 		key: filename,
+		file,
 	};
+}
+
+/**
+ * Uploads multiple item images to Supabase Storage
+ * @param files - Array of image files to upload
+ * @returns Array of object containing the public URL and storage key and file
+ */
+export async function uploadMultipleItemImages(files: File[]) {
+	const uploadedImages = [];
+
+	for (const file of files) {
+		try {
+			const uploadedImage = await uploadItemImage(file);
+			uploadedImages.push(uploadedImage);
+		} catch (error) {
+			console.error(`Error uploading image: ${file.name}`, error);
+			// Perform cleanup
+			for (const uploaded of uploadedImages) {
+				try {
+					await deleteItemImage(uploaded.key);
+				} catch (cleanupError) {
+					console.error("Failed to cleanup uploaded image:", cleanupError);
+				}
+			}
+			throw new Error(
+				`Failed to upload images: ${error instanceof Error ? error.message : "Unknown error"}`,
+			);
+		}
+	}
+
+	return uploadedImages;
 }
 
 /**

@@ -1,6 +1,6 @@
 "use client";
 
-import type { NewItemWithSecurity } from "@findhub/shared/types/item";
+import type { NewItem } from "@findhub/shared/types/item";
 import { Button } from "@findhub/ui/components/ui/button";
 import {
 	Card,
@@ -23,7 +23,7 @@ export default function NewItemPage() {
 	const router = useRouter();
 	const createMutation = useCreateItem();
 
-	const handleSubmit = async (data: NewItemWithSecurity) => {
+	const handleSubmit = async (data: NewItem) => {
 		try {
 			await createMutation.mutateAsync(data);
 			toast.success("Item created successfully");

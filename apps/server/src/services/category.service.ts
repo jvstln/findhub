@@ -1,4 +1,5 @@
-import { client } from "@findhub/db";
+import { client, db, itemCategories } from "@findhub/db";
+import { eq } from "@findhub/db/drizzle-orm";
 
 export interface ItemCategory {
 	id: number;
@@ -109,25 +110,22 @@ export class CategoryService {
 	 * Delete a category
 	 */
 	async deleteCategory(id: number): Promise<boolean> {
-		const result = await client`
-			DELETE FROM item_categories 
-			WHERE id = ${id}
-		`;
-
-		return result.count > 0;
+		const deletedCategory = await db
+			.delete(itemCategories)
+			.where(eq(itemCategories.id, id))
+			.returning();
+		return deletedCategory.length > 0;
 	}
 
 	/**
 	 * Check if a category is referenced by any items
 	 */
 	async isCategoryInUse(id: number): Promise<boolean> {
-		const result = await client<[{ count: number }]>`
-			SELECT COUNT(*)::int as count
-			FROM lost_items 
-			WHERE category = ${id}
-		`;
+		const item = await db.query.lostItems.findFirst({
+			where: (table, { eq }) => eq(table.categoryId, id),
+		});
 
-		return (result[0]?.count || 0) > 0;
+		return !!item;
 	}
 }
 

@@ -1,10 +1,17 @@
 "use client";
 
+import { createItemSchema, updateItemSchema } from "@findhub/shared/schemas";
 import type {
+	ItemUpdate,
+	ItemUpdateInput,
+	LostItemWithDecryptedSecurity,
 	LostItemWithImages,
-	NewItemWithSecurity,
+	NewItem,
+	NewItemInput,
 } from "@findhub/shared/types/item";
+import { toBoolean } from "@findhub/shared/utils";
 import { Button } from "@findhub/ui/components/ui/button";
+import { DatePicker } from "@findhub/ui/components/ui/date-picker";
 import {
 	Field,
 	FieldDescription,
@@ -12,6 +19,7 @@ import {
 	FieldLabel,
 } from "@findhub/ui/components/ui/field";
 import { Input } from "@findhub/ui/components/ui/input";
+import { FileInput } from "@findhub/ui/components/ui/input-file";
 import {
 	Select,
 	SelectContent,
@@ -21,48 +29,23 @@ import {
 } from "@findhub/ui/components/ui/select";
 import { Textarea } from "@findhub/ui/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { EyeOffIcon, ImageIcon, Loader2Icon, XIcon } from "lucide-react";
-import Image from "next/image";
-import { useEffect, useState } from "react";
+import { EyeOffIcon } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
-import { toast } from "sonner";
-import { z } from "zod";
 import { useCategories } from "@/features/categories/hooks/use-categories";
 import { PrivacyControls } from "./privacy-controls";
 import { SecurityQuestionsBuilder } from "./security-questions-builder";
-
-// Create a form-specific schema that handles string inputs for date and includes security questions
-const formSchema = z.object({
-	name: z.string().min(3, "Name must be at least 3 characters").max(255),
-	description: z
-		.string()
-		.min(10, "Description must be at least 10 characters")
-		.max(2000),
-	category: z.string().min(1, "Category is required"),
-	keywords: z.string().optional(),
-	location: z
-		.string()
-		.min(3, "Location must be at least 3 characters")
-		.max(255),
-	dateFound: z.string().min(1, "Date found is required"),
-	status: z.enum(["unclaimed", "claimed", "returned", "archived"]).optional(),
-	images: z.any().optional(),
-	hideLocation: z.boolean(),
-	hideDateFound: z.boolean(),
-	securityQuestions: z.array(z.any()),
-});
-
-type FormData = z.infer<typeof formSchema>;
 
 interface ItemFormProps {
 	/**
 	 * Initial values for editing an existing item
 	 */
-	defaultValues?: Partial<LostItemWithImages>;
+	defaultValues?:
+		| Partial<LostItemWithImages>
+		| Partial<LostItemWithDecryptedSecurity>;
 	/**
 	 * Callback when form is submitted successfully
 	 */
-	onSubmit: (data: NewItemWithSecurity) => void | Promise<void>;
+	onSubmit: (data: NewItem) => void | Promise<void>;
 	/**
 	 * Whether the form is in a loading/submitting state
 	 */
@@ -89,24 +72,22 @@ export function ItemForm({
 	onCancel,
 	isEditMode = false,
 }: ItemFormProps) {
-	const [imagePreview, setImagePreview] = useState<string | null>(
-		defaultValues?.images?.[0]?.url || null,
-	);
 	const { data: categories, isLoading: categoriesLoading } = useCategories();
 
 	const {
 		register,
 		handleSubmit,
 		formState: { errors },
-		setValue,
 		watch,
 		control,
-	} = useForm<FormData>({
-		resolver: zodResolver(formSchema),
+		getValues,
+		// } = useForm<NewItemInput, unknown, NewItem>({
+	} = useForm<NewItemInput | ItemUpdateInput, unknown, NewItem | ItemUpdate>({
+		resolver: zodResolver(isEditMode ? updateItemSchema : createItemSchema),
 		defaultValues: {
 			name: defaultValues?.name || "",
 			description: defaultValues?.description || "",
-			category: defaultValues?.categoryId?.toString() || "",
+			categoryId: defaultValues?.categoryId?.toString() || "",
 			keywords: Array.isArray(defaultValues?.keywords)
 				? defaultValues.keywords.join(", ")
 				: defaultValues?.keywords || "",
@@ -117,80 +98,40 @@ export function ItemForm({
 			status: defaultValues?.status || "unclaimed",
 			hideLocation: defaultValues?.hideLocation || false,
 			hideDateFound: defaultValues?.hideDateFound || false,
-			securityQuestions: [],
+			securityQuestions:
+				"securityQuestions" in (defaultValues || {})
+					? (
+							defaultValues as Partial<LostItemWithDecryptedSecurity>
+						).securityQuestions?.map((q) => {
+							if (q.questionType === "multiple_choice") {
+								return {
+									questionText: q.questionText,
+									questionType: "multiple_choice" as const,
+									options: q.options || [],
+									answer: q.answer,
+									displayOrder: q.displayOrder,
+								};
+							}
+							return {
+								questionText: q.questionText,
+								questionType: "free_text" as const,
+								options: undefined,
+								answer: q.answer,
+								displayOrder: q.displayOrder,
+							};
+						}) || []
+					: [],
+			images: [],
 		},
 	});
 
-	const imageFiles = watch("images");
 	const hideLocation = watch("hideLocation");
 	const hideDateFound = watch("hideDateFound");
 
-	// Update image preview when file changes
-	useEffect(() => {
-		if (imageFiles && imageFiles.length > 0 && imageFiles[0] instanceof File) {
-			const reader = new FileReader();
-			reader.onloadend = () => {
-				setImagePreview(reader.result as string);
-			};
-			reader.readAsDataURL(imageFiles[0]);
-		}
-	}, [imageFiles]);
+	const handleFormSubmit = async (data: NewItem | ItemUpdate) => {
+		console.log("Submitting...", data);
 
-	const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const files = Array.from(e.target.files || []);
-		if (files.length > 0) {
-			// Validate each file
-			for (const file of files) {
-				// Validate file size (5MB)
-				if (file.size > 5 * 1024 * 1024) {
-					toast.error(`Image ${file.name} must be less than 5MB`);
-					e.target.value = "";
-					return;
-				}
-
-				// Validate file type
-				const validTypes = ["image/jpeg", "image/png", "image/webp"];
-				if (!validTypes.includes(file.type)) {
-					toast.error(`Image ${file.name} must be JPEG, PNG, or WebP format`);
-					e.target.value = "";
-					return;
-				}
-			}
-
-			// Limit to 10 images
-			if (files.length > 10) {
-				toast.error("Maximum 10 images allowed");
-				e.target.value = "";
-				return;
-			}
-
-			setValue("images", files, { shouldValidate: true });
-		}
-	};
-
-	const handleRemoveImages = () => {
-		setValue("images", undefined);
-		setImagePreview(null);
-		// Reset file input
-		const fileInput = document.getElementById("images") as HTMLInputElement;
-		if (fileInput) {
-			fileInput.value = "";
-		}
-	};
-
-	const handleFormSubmit = async (data: FormData) => {
-		// Convert form data to NewItemWithSecurity format
-		const itemData: NewItemWithSecurity = {
-			...data,
-			dateFound: new Date(data.dateFound),
-			images: Array.isArray(data.images)
-				? data.images.filter((file): file is File => file instanceof File)
-				: undefined,
-			securityQuestions: data.securityQuestions,
-			hideLocation: data.hideLocation,
-			hideDateFound: data.hideDateFound,
-		};
-		await onSubmit(itemData);
+		await onSubmit(data as NewItem);
 	};
 
 	// Extract security question errors from form errors
@@ -218,7 +159,12 @@ export function ItemForm({
 	};
 
 	return (
-		<form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+		<form
+			onSubmit={handleSubmit(handleFormSubmit, (error) =>
+				console.log("Validation Error: ", error, getValues()),
+			)}
+			className="space-y-6"
+		>
 			{/* Name Field */}
 			<Field data-invalid={!!errors.name}>
 				<FieldLabel htmlFor="name">
@@ -231,7 +177,7 @@ export function ItemForm({
 					aria-invalid={!!errors.name}
 					disabled={isLoading}
 				/>
-				<FieldError>{errors.name?.message}</FieldError>
+				{errors.name?.message && <FieldError>{errors.name.message}</FieldError>}
 			</Field>
 
 			{/* Description Field */}
@@ -247,16 +193,18 @@ export function ItemForm({
 					aria-invalid={!!errors.description}
 					disabled={isLoading}
 				/>
-				<FieldError>{errors.description?.message}</FieldError>
+				{errors.description?.message && (
+					<FieldError>{errors.description.message}</FieldError>
+				)}
 			</Field>
 
 			{/* Category Field */}
-			<Field data-invalid={!!errors.category}>
+			<Field data-invalid={!!errors.categoryId}>
 				<FieldLabel htmlFor="category">
 					Category <span className="text-destructive">*</span>
 				</FieldLabel>
 				<Controller
-					name="category"
+					name="categoryId"
 					control={control}
 					render={({ field }) => (
 						<Select
@@ -267,7 +215,7 @@ export function ItemForm({
 							<SelectTrigger
 								id="category"
 								className="w-full"
-								aria-invalid={!!errors.category}
+								aria-invalid={!!errors.categoryId}
 							>
 								<SelectValue placeholder="Select a category" />
 							</SelectTrigger>
@@ -281,7 +229,9 @@ export function ItemForm({
 						</Select>
 					)}
 				/>
-				<FieldError>{errors.category?.message}</FieldError>
+				{errors.categoryId?.message && (
+					<FieldError>{errors.categoryId.message}</FieldError>
+				)}
 			</Field>
 
 			{/* Keywords Field */}
@@ -297,7 +247,9 @@ export function ItemForm({
 				<FieldDescription>
 					Optional keywords to help with search
 				</FieldDescription>
-				<FieldError>{errors.keywords?.message}</FieldError>
+				{errors.keywords?.message && (
+					<FieldError>{errors.keywords.message}</FieldError>
+				)}
 			</Field>
 
 			{/* Location Field */}
@@ -320,7 +272,9 @@ export function ItemForm({
 					aria-invalid={!!errors.location}
 					disabled={isLoading}
 				/>
-				<FieldError>{errors.location?.message}</FieldError>
+				{errors.location?.message && (
+					<FieldError>{errors.location.message}</FieldError>
+				)}
 			</Field>
 
 			{/* Date Found Field */}
@@ -336,15 +290,30 @@ export function ItemForm({
 						</div>
 					)}
 				</div>
-				<Input
-					id="dateFound"
-					type="date"
-					{...register("dateFound")}
-					max={new Date().toISOString().split("T")[0]}
-					aria-invalid={!!errors.dateFound}
-					disabled={isLoading}
+				<Controller
+					name="dateFound"
+					control={control}
+					render={({ field }) => {
+						const dateValue =
+							field.value && typeof field.value === "string"
+								? new Date(field.value)
+								: undefined;
+						return (
+							<DatePicker
+								date={dateValue}
+								onDateChange={(date) => {
+									field.onChange(date ? date.toISOString().split("T")[0] : "");
+								}}
+								placeholder="Select date found"
+								maxDate={new Date()}
+								disabled={isLoading}
+							/>
+						);
+					}}
 				/>
-				<FieldError>{errors.dateFound?.message}</FieldError>
+				{errors.dateFound?.message && (
+					<FieldError>{errors.dateFound.message}</FieldError>
+				)}
 			</Field>
 
 			{/* Privacy Controls */}
@@ -357,8 +326,8 @@ export function ItemForm({
 						control={control}
 						render={({ field: dateField }) => (
 							<PrivacyControls
-								hideLocation={locationField.value}
-								hideDateFound={dateField.value}
+								hideLocation={toBoolean(locationField.value)}
+								hideDateFound={toBoolean(dateField.value)}
 								onHideLocationChange={locationField.onChange}
 								onHideDateFoundChange={dateField.onChange}
 								disabled={isLoading}
@@ -372,88 +341,86 @@ export function ItemForm({
 			<Controller
 				name="securityQuestions"
 				control={control}
+				render={({ field }) => {
+					const questions = Array.isArray(field.value) ? field.value : [];
+					return (
+						<SecurityQuestionsBuilder
+							questions={questions}
+							onChange={field.onChange}
+							errors={getSecurityQuestionErrors()}
+						/>
+					);
+				}}
+			/>
+
+			{/* Existing Images Display (Edit Mode) */}
+			{isEditMode &&
+				defaultValues?.images &&
+				defaultValues.images.length > 0 && (
+					<Field>
+						<FieldLabel>
+							Current Images ({defaultValues.images.length})
+						</FieldLabel>
+						<div className="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8">
+							{defaultValues.images.map((image) => (
+								<div
+									key={image.id}
+									className="relative aspect-square overflow-hidden rounded-md border"
+								>
+									<picture>
+										<img
+											src={image.url}
+											alt={image.filename}
+											className="size-full object-cover"
+										/>
+									</picture>
+								</div>
+							))}
+						</div>
+						<FieldDescription>
+							Existing images will be kept. Upload new images below to add more.
+						</FieldDescription>
+					</Field>
+				)}
+
+			{/* Images Upload Field */}
+			<Controller
+				name="images"
+				control={control}
 				render={({ field }) => (
-					<SecurityQuestionsBuilder
-						questions={field.value || []}
-						onChange={field.onChange}
-						errors={getSecurityQuestionErrors()}
-					/>
+					<Field data-invalid={!!errors.images}>
+						<FieldLabel htmlFor="images" data-required>
+							{isEditMode ? "Add New Images" : "Item Images"}
+						</FieldLabel>
+						<FileInput
+							files={field.value}
+							onFilesChange={(files) => field.onChange([...files.keys()])}
+							placeholderType="image"
+							multiple
+							accept="image/jpeg,image/png,image/webp"
+							disabled={isLoading}
+						/>
+						<FieldDescription>
+							{isEditMode
+								? "Upload additional photos (up to 10 images total)"
+								: "Upload clear photos of the item to help with identification (up to 10 images)"}
+						</FieldDescription>
+						{errors.images?.message && (
+							<FieldError>{errors.images.message}</FieldError>
+						)}
+					</Field>
 				)}
 			/>
 
-			{/* Images Upload Field */}
-			<Field data-invalid={!!errors.images}>
-				<FieldLabel htmlFor="images">Item Images</FieldLabel>
-				<div className="space-y-4">
-					{imagePreview ? (
-						<div className="relative w-full max-w-md">
-							<div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-muted">
-								<Image
-									src={imagePreview}
-									alt="Item preview"
-									fill
-									className="object-cover"
-								/>
-							</div>
-							<Button
-								type="button"
-								variant="destructive"
-								size="icon"
-								className="absolute top-2 right-2"
-								onClick={handleRemoveImages}
-								disabled={isLoading}
-							>
-								<XIcon />
-								<span className="sr-only">Remove images</span>
-							</Button>
-						</div>
-					) : (
-						<div className="flex w-full max-w-md items-center justify-center">
-							<label
-								htmlFor="images"
-								className="flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-muted-foreground/25 border-dashed bg-muted/50 transition-colors hover:border-muted-foreground/50 hover:bg-muted"
-							>
-								<div className="flex flex-col items-center justify-center pt-5 pb-6">
-									<ImageIcon className="mb-2 size-8 text-muted-foreground" />
-									<p className="mb-2 text-muted-foreground text-sm">
-										<span className="font-semibold">Click to upload</span> or
-										drag and drop
-									</p>
-									<p className="text-muted-foreground text-xs">
-										JPEG, PNG, or WebP (max 5MB each, up to 10 images)
-									</p>
-								</div>
-								<input
-									id="images"
-									type="file"
-									multiple
-									className="hidden"
-									accept="image/jpeg,image/png,image/webp"
-									onChange={handleImageChange}
-									disabled={isLoading}
-								/>
-							</label>
-						</div>
-					)}
-				</div>
-				<FieldDescription>
-					Upload clear photos of the item to help with identification (up to 10
-					images)
-				</FieldDescription>
-				<FieldError>{errors.images?.message as string}</FieldError>
-			</Field>
-
 			{/* Form Actions */}
 			<div className="flex gap-3 pt-4">
-				<Button type="submit" disabled={isLoading} className="min-w-32">
-					{isLoading ? (
-						<>
-							<Loader2Icon className="animate-spin" />
-							<span>Saving...</span>
-						</>
-					) : (
-						submitLabel
-					)}
+				<Button
+					type="submit"
+					isLoading={isLoading}
+					loadingText="Saving..."
+					className="min-w-32"
+				>
+					{submitLabel}
 				</Button>
 				{onCancel && (
 					<Button

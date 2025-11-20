@@ -12,7 +12,7 @@ export async function getItems(
 ): Promise<PaginatedResponse<PublicLostItem>> {
 	const params = new URLSearchParams();
 
-	if (filters?.query) params.append("keyword", filters.query);
+	if (filters?.query) params.append("query", filters.query);
 	if (filters?.categoryId) params.append("categoryId", filters.categoryId);
 	if (filters?.location) params.append("location", filters.location);
 	if (filters?.status) params.append("status", filters.status);

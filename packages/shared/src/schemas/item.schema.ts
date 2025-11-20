@@ -1,9 +1,6 @@
 // Shared Zod validation schemas for lost items feature
 import { z } from "zod";
-import {
-	privacyControlsSchema,
-	securityQuestionsArraySchema,
-} from "./security-questions.schema";
+import { securityQuestionsArraySchema } from "./security-questions.schema";
 
 // Re-export security questions schemas for convenience
 export * from "./security-questions.schema";
@@ -15,35 +12,84 @@ export const itemStatusSchema = z.enum([
 	"archived",
 ]);
 
+const imageSchema = z
+	.file()
+	.max(5 * 1024 * 1024, "Each image must be less than 5MB")
+	.mime(
+		["image/jpeg", "image/png", "image/webp"],
+		"Images must be JPEG, PNG, or WebP format",
+	);
+
 export const createItemSchema = z.object({
 	name: z.string().min(3, "Name must be at least 3 characters").max(255),
 	description: z
 		.string()
 		.min(10, "Description must be at least 10 characters")
 		.max(2000),
-	category: z.string().min(1, "Category is required"),
-	keywords: z.string().optional(),
+	categoryId: z
+		.string()
+		.min(1, "Category is required")
+		.transform((val) => Number.parseInt(val, 10))
+		.optional(),
+	keywords: z
+		.union([
+			z.string().transform((val) => val.trim().split(/\s*,\s*/g)),
+			z.array(z.string()),
+		])
+		.default([]),
 	location: z
 		.string()
 		.min(3, "Location must be at least 3 characters")
 		.max(255),
 	dateFound: z.coerce.date(),
-	images: z
-		.array(
-			z
-				.file()
-				.max(5 * 1024 * 1024, "Each image must be less than 5MB")
-				.mime(
-					["image/jpeg", "image/png", "image/webp"],
-					"Images must be JPEG, PNG, or WebP format",
-				),
-		)
-		.max(10, "Maximum 10 images allowed")
-		.optional(),
+	images: z.union([
+		imageSchema.transform((val) => [val]),
+		z
+			.array(imageSchema)
+			.max(10, "Maximum 10 images allowed")
+			.min(1, "At least one image is required"),
+	]),
 	status: itemStatusSchema.optional(),
+	securityQuestions: z
+		.union([
+			securityQuestionsArraySchema,
+			z.string().transform((val, ctx) => {
+				try {
+					const parsed = JSON.parse(val);
+					if (!Array.isArray(parsed)) {
+						ctx.issues.push({
+							code: "custom",
+							message: "Security questions must be an array",
+							input: val,
+						});
+						return z.NEVER;
+					}
+
+					return parsed;
+				} catch {
+					ctx.issues.push({
+						code: "custom",
+						message: "Invalid JSON for security questions",
+						input: val,
+					});
+					return z.NEVER;
+				}
+			}),
+		])
+		.optional(),
+	hideLocation: z.union([z.boolean(), z.stringbool()]).default(false),
+	hideDateFound: z.union([z.boolean(), z.stringbool()]).default(false),
 });
 
-export const updateItemSchema = createItemSchema.partial();
+export const updateItemSchema = z
+	.object({
+		...createItemSchema.shape,
+		images: z.union([
+			imageSchema.transform((val) => [val]).optional(),
+			z.array(imageSchema).max(10, "Maximum 10 images allowed").optional(),
+		]),
+	})
+	.partial();
 
 export const searchFiltersSchema = z.object({
 	query: z.string().optional(),
@@ -101,14 +147,3 @@ export const imageUpdateSchema = z.object({
 export const imageIdSchema = z.object({
 	id: z.coerce.number().int().positive(),
 });
-
-// Extended item creation schema with security questions and privacy controls
-export const createItemWithSecuritySchema = createItemSchema
-	.extend({
-		securityQuestions: securityQuestionsArraySchema.optional(),
-	})
-	.merge(privacyControlsSchema);
-
-// Extended item update schema with security questions and privacy controls
-export const updateItemWithSecuritySchema =
-	createItemWithSecuritySchema.partial();

@@ -1,22 +1,17 @@
-import type {
-	LostItemWithImages,
-	NewItemWithSecurity,
-} from "@findhub/shared/types/item";
-import { postFormData } from "@findhub/ui/lib/api-client";
+import type { LostItemWithImages, NewItem } from "@findhub/shared/types/item";
+import { apiClient, postFormData } from "@findhub/ui/lib/api-client";
 
 /**
  * Create a new lost item with optional multiple image uploads, security questions, and privacy controls
  * @param data - The item data including name, description, category, location, dateFound, optional images, security questions, and privacy settings
  * @returns The created lost item
  */
-export async function createItem(
-	data: NewItemWithSecurity,
-): Promise<LostItemWithImages> {
+export async function createItem(data: NewItem): Promise<LostItemWithImages> {
 	const formData = new FormData();
 
 	formData.append("name", String(data.name));
 	formData.append("description", String(data.description));
-	formData.append("category", String(data.category));
+	formData.append("categoryId", String(data.categoryId));
 	formData.append("location", String(data.location));
 	formData.append("dateFound", data.dateFound.toISOString());
 

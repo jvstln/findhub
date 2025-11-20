@@ -6,16 +6,18 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 import type { Route } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import { CachedDataBadge } from "@/components/cached-data-badge";
 import { ItemDetail } from "@/features/items/components/item-detail";
 import { useItem } from "@/features/items/hooks/use-item";
 
-export default function ItemDetailPage({ params }: { params: { id: string } }) {
-	const itemId = Number.parseInt(params.id, 10);
+export default function ItemDetailPage() {
+	const params = useParams();
+	const itemId = Number.parseInt(String(params.id), 10);
 
 	// Validate ID
 	if (Number.isNaN(itemId) || itemId <= 0) {
+		console.log(itemId);
 		notFound();
 	}
 

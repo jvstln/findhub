@@ -224,6 +224,69 @@ graph TB
     style SYS fill:#9C27B0,color:#fff
 ```
 
+## PlantUML Diagram (Shorter Version)
+
+```plantuml
+@startuml FindHub Simplified Use Case Diagram
+top to bottom direction
+skinparam packageStyle rectangle
+
+actor "Public User" as PU #4CAF50
+actor "Admin User" as AU #FF9800
+actor "System" as SYS #9C27B0
+
+rectangle "FindHub Lost and Found System" {
+  
+  package "Public Features" #E8F5E9 {
+    usecase "Search & Filter Items" as UC1
+    usecase "View Item Details" as UC2
+  }
+  
+  package "Admin Features" #FFF3E0 {
+    usecase "Login" as UC3
+    usecase "Manage Items\n(CRUD + Status)" as UC4
+    usecase "Manage Security\n& Privacy" as UC5
+  }
+  
+  package "System Automation" #F3E5F5 {
+    usecase "System Processing\n(Encrypt/Decrypt/Filter)" as UC6
+  }
+}
+
+' Public User Relationships
+PU --> UC1
+PU --> UC2
+
+' Admin User Relationships
+AU --> UC3
+AU --> UC4
+AU --> UC5
+
+' System Relationships
+SYS --> UC6
+
+' Include Relationships
+UC4 ..> UC5 : <<include>>
+UC2 ..> UC6 : <<include>>
+UC5 ..> UC6 : <<include>>
+
+' Extend Relationships
+UC3 <.. UC4 : <<extends>>
+
+note right of UC6
+  Handles encryption, decryption,
+  and field filtering automatically
+end note
+
+note bottom of UC3
+  Authentication required
+  for all admin operations
+end note
+
+@enduml
+```
+
+
 ## Use Case Descriptions
 
 ### Public User Use Cases

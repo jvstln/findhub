@@ -5,6 +5,7 @@ import type { PublicLostItem } from "@findhub/shared/types/item";
 import { Button } from "@findhub/ui/components/ui/button";
 import { ItemCardSkeleton } from "@findhub/ui/components/ui/item-card-skeleton";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { ItemGrid } from "@/features/items/components/item-grid";
 
 interface SearchResultsProps {
@@ -56,7 +57,12 @@ export function SearchResults({
 	hasActiveFilters = false,
 	onPageChange,
 }: SearchResultsProps) {
+	const router = useRouter();
 	const { data: items, page, totalPages, total } = data;
+
+	const handleItemClick = (item: PublicLostItem) => {
+		router.push(`/items/${item.id}`);
+	};
 
 	const handlePreviousPage = () => {
 		if (page > 1) {
@@ -115,7 +121,7 @@ export function SearchResults({
 			</div>
 
 			{/* Items grid */}
-			<ItemGrid items={items} />
+			<ItemGrid items={items} onItemClick={handleItemClick} />
 
 			{/* Pagination controls */}
 			{totalPages > 1 && (

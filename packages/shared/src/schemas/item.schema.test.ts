@@ -35,7 +35,7 @@ describe("createItemSchema", () => {
 		const result = createItemSchema.parse(validItemData);
 		expect(result.name).toBe("Lost Wallet");
 		expect(result.description).toBe("Black leather wallet found near library");
-		expect(result.category).toBe("accessories");
+		expect(result.categoryId).toBe("accessories");
 		expect(result.location).toBe("Main Library");
 		expect(result.dateFound).toBeInstanceOf(Date);
 	});

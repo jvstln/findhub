@@ -44,6 +44,7 @@ import {
 	ArrowUpDown,
 	Calendar,
 	Edit,
+	Eye,
 	Grid3x3,
 	MapPin,
 	MoreVertical,
@@ -61,6 +62,7 @@ type SortDirection = "asc" | "desc";
 
 interface ItemTableProps {
 	items: LostItemWithImages[];
+	onView?: (item: LostItemWithImages) => void;
 	onEdit?: (item: LostItemWithImages) => void;
 	onDelete?: (item: LostItemWithImages) => void;
 	onStatusChange?: (item: LostItemWithImages, newStatus: ItemStatus) => void;
@@ -71,6 +73,7 @@ interface ItemTableProps {
 
 export function ItemTable({
 	items,
+	onView,
 	onEdit,
 	onDelete,
 	onStatusChange,
@@ -85,6 +88,7 @@ export function ItemTable({
 	const [itemToDelete, setItemToDelete] = useState<LostItemWithImages | null>(
 		null,
 	);
+	const [updatingStatusId, setUpdatingStatusId] = useState<number | null>(null);
 
 	// Sort items
 	const sortedItems = [...items].sort((a, b) => {
@@ -143,9 +147,17 @@ export function ItemTable({
 		setItemToDelete(null);
 	};
 
-	const handleStatusChange = (item: LostItemWithImages, newStatus: string) => {
+	const handleStatusChange = async (
+		item: LostItemWithImages,
+		newStatus: string,
+	) => {
 		if (onStatusChange) {
-			onStatusChange(item, newStatus as ItemStatus);
+			setUpdatingStatusId(item.id);
+			try {
+				await onStatusChange(item, newStatus as ItemStatus);
+			} finally {
+				setUpdatingStatusId(null);
+			}
 		}
 	};
 
@@ -222,7 +234,7 @@ export function ItemTable({
 			{viewMode === "card" && (
 				<ItemGrid
 					items={sortedItems}
-					onItemClick={onEdit}
+					onItemClick={onView || onEdit}
 					emptyMessage={emptyMessage}
 				/>
 			)}
@@ -360,6 +372,7 @@ export function ItemTable({
 												onValueChange={(value) =>
 													handleStatusChange(item, value)
 												}
+												disabled={updatingStatusId === item.id}
 											>
 												<SelectTrigger size="sm" className="w-[130px]">
 													<SelectValue />
@@ -393,6 +406,12 @@ export function ItemTable({
 											<DropdownMenuContent align="end">
 												<DropdownMenuLabel>Actions</DropdownMenuLabel>
 												<DropdownMenuSeparator />
+												{onView && (
+													<DropdownMenuItem onClick={() => onView(item)}>
+														<Eye />
+														View
+													</DropdownMenuItem>
+												)}
 												{onEdit && (
 													<DropdownMenuItem onClick={() => onEdit(item)}>
 														<Edit />

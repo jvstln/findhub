@@ -18,6 +18,8 @@ import {
 	gte,
 	ilike,
 	lte,
+	ne,
+	not,
 	or,
 	sql,
 } from "@findhub/db/drizzle-orm";
@@ -28,27 +30,18 @@ import type {
 	ItemStatus,
 	LostItem,
 	LostItemWithImages,
+	NewItem,
 	SearchFilters,
 	StatusHistoryEntry,
 } from "@findhub/shared/types/item";
 import { getPaginatedMeta } from "@findhub/shared/utils";
 import { categoryService } from "./category.service";
 import { securityQuestionsService } from "./security-questions.service";
-import { deleteItemImage, uploadItemImage } from "./upload.service";
-
-export interface CreateItemInput {
-	name: string;
-	description: string;
-	categoryId?: number | null;
-	keywords?: string;
-	location: string;
-	dateFound: Date;
-	images?: File[];
-	createdById: string;
-	securityQuestions?: SecurityQuestionInput[];
-	hideLocation?: boolean;
-	hideDateFound?: boolean;
-}
+import {
+	deleteItemImage,
+	uploadItemImage,
+	uploadMultipleItemImages,
+} from "./upload.service";
 
 export interface UpdateItemInput {
 	name?: string;
@@ -91,7 +84,7 @@ export class ItemsService {
 		} = searchFiltersSchema.parse(filters);
 
 		// Build WHERE conditions
-		const conditions = [];
+		const conditions = [ne(lostItems.status, "archived")];
 
 		// Keyword search (name, description, or keywords)
 		if (query) {
@@ -172,7 +165,7 @@ export class ItemsService {
 		} = searchFiltersSchema.parse(filters);
 
 		// Build WHERE conditions
-		const conditions = [];
+		const conditions = [ne(lostItems.status, "archived")];
 
 		// Keyword search (name, description, or keywords)
 		if (query) {
@@ -266,36 +259,17 @@ export class ItemsService {
 	/**
 	 * Get a single item by ID
 	 */
-	async getItemById(id: number): Promise<LostItem | null> {
-		const items = await db
-			.select()
-			.from(lostItems)
-			.where(eq(lostItems.id, id))
-			.limit(1);
+	async getItemById(id: number) {
+		const item = await db.query.lostItems.findFirst({
+			with: {
+				images: {
+					orderBy: (images, { asc }) => [asc(images.displayOrder)],
+				},
+			},
+			where: (item, { eq }) => eq(item.id, id),
+		});
 
-		return items[0] || null;
-	}
-
-	/**
-	 * Get a single item by ID with images
-	 */
-	async getItemByIdWithImages(id: number): Promise<LostItemWithImages | null> {
-		const item = await this.getItemById(id);
-
-		if (!item) {
-			return null;
-		}
-
-		const images = await db
-			.select()
-			.from(itemImages)
-			.where(eq(itemImages.itemId, id))
-			.orderBy(itemImages.displayOrder);
-
-		return {
-			...item,
-			images,
-		};
+		return item ?? null;
 	}
 
 	/**
@@ -303,7 +277,7 @@ export class ItemsService {
 	 * Returns complete item information with decrypted security questions
 	 */
 	async getItemWithSecurity(id: number): Promise<LostItemWithSecurity | null> {
-		const item = await this.getItemByIdWithImages(id);
+		const item = await this.getItemById(id);
 
 		if (!item) {
 			return null;
@@ -329,7 +303,7 @@ export class ItemsService {
 	async getItemWithDecryptedSecurity(
 		id: number,
 	): Promise<LostItemWithDecryptedSecurity | null> {
-		const item = await this.getItemByIdWithImages(id);
+		const item = await this.getItemById(id);
 
 		if (!item) {
 			return null;
@@ -351,7 +325,7 @@ export class ItemsService {
 	 * Never includes security questions
 	 */
 	async getPublicItem(id: number): Promise<PublicLostItem | null> {
-		const item = await this.getItemByIdWithImages(id);
+		const item = await this.getItemById(id);
 
 		if (!item) {
 			return null;
@@ -370,7 +344,9 @@ export class ItemsService {
 	 * Create a new lost item with optional multiple image uploads to Supabase Storage
 	 * Supports security questions and privacy controls
 	 */
-	async createItem(input: CreateItemInput): Promise<LostItemWithImages> {
+	async createItem(
+		input: NewItem & { createdById: string },
+	): Promise<LostItemWithImages> {
 		// Validate category exists if provided
 		if (input.categoryId) {
 			const category = await categoryService.getCategoryById(input.categoryId);
@@ -381,102 +357,56 @@ export class ItemsService {
 			}
 		}
 
-		const uploadedImages: Array<{ url: string; key: string; file: File }> = [];
-
 		// Upload images to Supabase Storage if provided
-		if (input.images && input.images.length > 0) {
-			try {
-				for (const image of input.images) {
-					const uploadResult = await uploadItemImage(image);
-					uploadedImages.push({
-						url: uploadResult.url,
-						key: uploadResult.key,
-						file: image,
-					});
-				}
-			} catch (error) {
-				// Cleanup any uploaded images if upload fails
-				for (const uploaded of uploadedImages) {
-					try {
-						await deleteItemImage(uploaded.key);
-					} catch (cleanupError) {
-						console.error("Failed to cleanup uploaded image:", cleanupError);
-					}
-				}
-				throw new Error(
-					`Failed to upload images: ${error instanceof Error ? error.message : "Unknown error"}`,
-				);
-			}
+		const uploadedImages = await uploadMultipleItemImages(input.images);
+
+		// Create the item first with privacy controls
+		const [item] = await db
+			.insert(lostItems)
+			.values({ ...input, status: "unclaimed" })
+			.returning();
+
+		if (!item) {
+			throw new Error("Failed to create item");
 		}
 
-		try {
-			// Create the item first with privacy controls
-			const [item] = await db
-				.insert(lostItems)
-				.values({
-					name: input.name,
-					description: input.description,
-					categoryId: input.categoryId,
-					keywords: input.keywords ? [input.keywords] : null,
-					location: input.location,
-					dateFound: input.dateFound,
-					createdById: input.createdById,
-					status: "unclaimed",
-					hideLocation: input.hideLocation ?? false,
-					hideDateFound: input.hideDateFound ?? false,
-				})
+		// Insert images if any were uploaded
+		const images: ItemImage[] = [];
+		if (uploadedImages.length > 0) {
+			const imageInserts = uploadedImages.map((uploaded, index) => ({
+				itemId: item.id,
+				url: uploaded.url,
+				key: uploaded.key,
+				filename: uploaded.file.name,
+				mimeType: uploaded.file.type,
+				size: uploaded.file.size,
+				displayOrder: index,
+				uploadedById: item.createdById,
+			}));
+
+			const insertedImages = await db
+				.insert(itemImages)
+				.values(imageInserts)
 				.returning();
 
-			if (!item) {
-				throw new Error("Failed to create item");
-			}
-
-			// Insert images if any were uploaded
-			const images: ItemImage[] = [];
-			if (uploadedImages.length > 0) {
-				const imageInserts = uploadedImages.map((uploaded, index) => ({
-					itemId: item.id,
-					url: uploaded.url,
-					key: uploaded.key,
-					filename: uploaded.file.name,
-					mimeType: uploaded.file.type,
-					size: uploaded.file.size,
-					displayOrder: index,
-					uploadedById: input.createdById,
-				}));
-
-				const insertedImages = await db
-					.insert(itemImages)
-					.values(imageInserts)
-					.returning();
-
-				images.push(...insertedImages);
-			}
-
-			// Create security questions if provided
-			if (input.securityQuestions && input.securityQuestions.length > 0) {
-				await securityQuestionsService.createQuestions(
-					item.id,
-					input.securityQuestions,
-					input.createdById,
-				);
-			}
-
-			return {
-				...item,
-				images,
-			};
-		} catch (error) {
-			// Cleanup uploaded images if database insert fails
-			for (const uploaded of uploadedImages) {
-				try {
-					await deleteItemImage(uploaded.key);
-				} catch (cleanupError) {
-					console.error("Failed to cleanup uploaded image:", cleanupError);
-				}
-			}
-			throw error;
+			images.push(...insertedImages);
 		}
+
+		// Create security questions if provided
+		if (input.securityQuestions && input.securityQuestions.length > 0) {
+			console.log(input.securityQuestions);
+
+			await securityQuestionsService.createQuestions(
+				item.id,
+				input.securityQuestions,
+				item.createdById,
+			);
+		}
+
+		return {
+			...item,
+			images,
+		};
 	}
 
 	/**
@@ -657,7 +587,7 @@ export class ItemsService {
 		}
 
 		// Return item with images
-		return await this.getItemByIdWithImages(id);
+		return await this.getItemById(id);
 	}
 
 	/**
@@ -718,7 +648,7 @@ export class ItemsService {
 	 */
 	async deleteItem(id: number, userId: string): Promise<boolean> {
 		// Get current item with images
-		const currentItem = await this.getItemByIdWithImages(id);
+		const currentItem = await this.getItemById(id);
 
 		if (!currentItem) {
 			return false;

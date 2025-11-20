@@ -1,3 +1,7 @@
+import z from "zod";
+
+export * from "./date.util";
+
 export const capitalize = (
 	str: string,
 	_lowerCaseWords: string | string[] = [],
@@ -30,6 +34,12 @@ export const getPaginatedMeta = (
 		totalPages: Math.ceil(total / pageSize),
 		offset: (page - 1) * pageSize,
 	};
+};
+
+export const toBoolean = (value?: unknown) => {
+	if (typeof value === "boolean") return value;
+	if (typeof value === "number") return value > 0;
+	return z.stringbool().safeParse(value).success;
 };
 
 export const statuses = [
