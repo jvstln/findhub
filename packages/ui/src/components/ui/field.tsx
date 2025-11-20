@@ -1,8 +1,8 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import { useMemo } from "react";
+import { cn } from "../../lib/utils";
 import { Label } from "./label";
 import { Separator } from "./separator";
-import { cn } from "../../lib/utils";
 
 function FieldSet({ className, ...props }: React.ComponentProps<"fieldset">) {
 	return (
@@ -182,12 +182,14 @@ function FieldSeparator({
 function FieldError({
 	className,
 	children,
-	errors,
+	errors: _errors,
 	...props
 }: React.ComponentProps<"div"> & {
-	errors?: Array<{ message?: string } | undefined>;
+	errors?: Array<{ message?: string } | undefined> | { message?: string };
 }) {
 	const content = useMemo(() => {
+		const errors = [_errors].flat();
+
 		if (children) {
 			return children;
 		}
@@ -211,7 +213,7 @@ function FieldError({
 				)}
 			</ul>
 		);
-	}, [children, errors]);
+	}, [children, _errors]);
 
 	if (!content) {
 		return null;

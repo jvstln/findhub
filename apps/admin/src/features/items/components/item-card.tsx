@@ -1,4 +1,5 @@
 import type { LostItemWithImages } from "@findhub/shared/types/item";
+import { formatItemDate } from "@findhub/shared/utils";
 import {
 	Card,
 	CardContent,
@@ -10,7 +11,6 @@ import { Calendar, MapPin } from "lucide-react";
 import { motion } from "motion/react";
 import Image from "next/image";
 import { useCategories } from "@/features/categories/hooks/use-categories";
-import { formatItemDate } from "@/lib/date-utils";
 import { PrivacyStatusBadge } from "./privacy-status-badge";
 import { StatusBadge } from "./status-badge";
 

@@ -39,6 +39,7 @@ export class AppError extends Error {
  * app.onError(errorHandler);
  * ```
  */
+
 export function errorHandler(err: Error, c: Context) {
 	console.error("Error occurred:", {
 		name: err.name,
@@ -97,25 +98,3 @@ export function errorHandler(err: Error, c: Context) {
 
 	return c.json(response, 500);
 }
-
-/**
- * Helper function to create common error types
- */
-export const createError = {
-	notFound: (message = "Resource not found") =>
-		new AppError("NOT_FOUND", message, 404),
-
-	unauthorized: (message = "Authentication required") =>
-		new AppError("UNAUTHORIZED", message, 401),
-
-	forbidden: (message = "Insufficient permissions") =>
-		new AppError("FORBIDDEN", message, 403),
-
-	badRequest: (message: string, details?: unknown) =>
-		new AppError("BAD_REQUEST", message, 400, details),
-
-	conflict: (message: string) => new AppError("CONFLICT", message, 409),
-
-	internal: (message = "Internal server error") =>
-		new AppError("INTERNAL_ERROR", message, 500),
-};

@@ -186,7 +186,11 @@
 	button {
 		@apply cursor-pointer disabled:cursor-not-allowed;
 	}
+	label[data-required] {
+		@apply after:content-['*'] after:text-destructive;
+	}
 }
+
 @layer utilities {
 	.bg-grid-pattern {
 		background-image:

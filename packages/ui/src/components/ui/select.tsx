@@ -25,10 +25,12 @@ function SelectValue({
 function SelectTrigger({
 	className,
 	size = "default",
+	isLoading,
 	children,
 	...props
 }: React.ComponentProps<typeof SelectPrimitive.Trigger> & {
 	size?: "sm" | "default";
+	isLoading?: boolean;
 }) {
 	return (
 		<SelectPrimitive.Trigger
@@ -42,7 +44,11 @@ function SelectTrigger({
 		>
 			{children}
 			<SelectPrimitive.Icon asChild>
-				<ChevronDownIcon className="size-4 opacity-50" />
+				{isLoading ? (
+					<div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+				) : (
+					<ChevronDownIcon className="size-4 opacity-50" />
+				)}
 			</SelectPrimitive.Icon>
 		</SelectPrimitive.Trigger>
 	);

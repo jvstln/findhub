@@ -50,12 +50,6 @@ export const securityQuestionsArraySchema = z
 	.array(securityQuestionInputSchema)
 	.max(10, "Maximum 10 security questions allowed");
 
-// Privacy controls schema
-export const privacyControlsSchema = z.object({
-	hideLocation: z.boolean().default(false),
-	hideDateFound: z.boolean().default(false),
-});
-
 // Type exports for TypeScript
 export type QuestionTypeSchema = z.infer<typeof questionTypeSchema>;
 export type MultipleChoiceQuestion = z.infer<
@@ -66,4 +60,3 @@ export type SecurityQuestionInput = z.infer<typeof securityQuestionInputSchema>;
 export type SecurityQuestionsArray = z.infer<
 	typeof securityQuestionsArraySchema
 >;
-export type PrivacyControls = z.infer<typeof privacyControlsSchema>;

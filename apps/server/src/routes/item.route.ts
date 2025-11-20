@@ -96,53 +96,13 @@ items.get("/:id", zValidator("param", itemIdSchema), async (c) => {
 items.post("/", authMiddleware, async (c) => {
 	try {
 		const user = getAuthUser(c);
-		const formData = await c.req.formData();
+		const body = await c.req.parseBody({ all: true });
 
-		// Extract form fields
-		const name = formData.get("name") as string;
-		const description = formData.get("description") as string;
-		const category = formData.get("category") as string;
-		const keywords = formData.get("keywords") as string | undefined;
-		const location = formData.get("location") as string;
-		const dateFound = formData.get("dateFound") as string;
-		const image = formData.get("image") as File | null;
-
-		// Validate input data
-		const validationResult = createItemSchema.safeParse({
-			name,
-			description,
-			category,
-			keywords,
-			location,
-			dateFound,
-			image: image || undefined,
-		});
-
-		if (!validationResult.success) {
-			return c.json(
-				{
-					success: false,
-					error: {
-						code: "VALIDATION_ERROR",
-						message: "Invalid input data",
-						details: validationResult.error.issues,
-					},
-				},
-				400,
-			);
-		}
+		const validatedData = createItemSchema.parse(body);
 
 		// Create item with image upload handled by service
 		const item = await itemsService.createItem({
-			name: validationResult.data.name,
-			description: validationResult.data.description,
-			categoryId: validationResult.data.category
-				? Number.parseInt(validationResult.data.category, 10)
-				: null,
-			keywords: validationResult.data.keywords,
-			location: validationResult.data.location,
-			dateFound: validationResult.data.dateFound,
-			images: image && image.size > 0 ? [image] : undefined,
+			...validatedData,
 			createdById: user.id,
 		});
 
@@ -282,9 +242,9 @@ items.patch(
 					| "claimed"
 					| "returned"
 					| "archived";
-			if (validationResult.data.category) {
+			if (validationResult.data.categoryId) {
 				updateInput.categoryId = Number.parseInt(
-					validationResult.data.category,
+					validationResult.data.categoryId,
 					10,
 				);
 			}

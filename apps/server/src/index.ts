@@ -4,7 +4,6 @@ import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { authMiddleware, getAuthUser } from "./middleware/auth.middleware";
 import { errorHandler } from "./middleware/error.middleware";
 import adminItems from "./routes/admin-item.route";
 import categories from "./routes/category.route";
@@ -44,19 +43,6 @@ app.route("/api/admin/items", adminItems);
 
 app.get("/", (c) => {
 	return c.text("OK");
-});
-
-// Example protected route - demonstrates auth middleware usage
-app.get("/api/me", authMiddleware, (c) => {
-	const user = getAuthUser(c);
-	return c.json({
-		success: true,
-		data: {
-			id: user.id,
-			email: user.email,
-			name: user.name,
-		},
-	});
 });
 
 // Global error handler - must be registered last

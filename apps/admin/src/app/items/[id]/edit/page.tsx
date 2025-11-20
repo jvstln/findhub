@@ -1,9 +1,6 @@
 "use client";
 
-import type {
-	ItemStatus,
-	NewItemWithSecurity,
-} from "@findhub/shared/types/item";
+import type { ItemStatus, NewItem } from "@findhub/shared/types/item";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -74,14 +71,14 @@ export default function EditItemPage({ params }: EditItemPageProps) {
 	const deleteMutation = useDeleteItem();
 
 	// Handle form submission
-	const handleSubmit = async (data: NewItemWithSecurity) => {
+	const handleSubmit = async (data: NewItem) => {
 		try {
 			await updateMutation.mutateAsync({
 				id: itemId,
 				data: {
 					name: data.name,
 					description: data.description,
-					category: data.category,
+					categoryId: data.categoryId,
 					keywords: data.keywords,
 					location: data.location,
 					dateFound: data.dateFound,

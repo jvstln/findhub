@@ -85,6 +85,7 @@ export function ItemTable({
 	const [itemToDelete, setItemToDelete] = useState<LostItemWithImages | null>(
 		null,
 	);
+	const [updatingStatusId, setUpdatingStatusId] = useState<number | null>(null);
 
 	// Sort items
 	const sortedItems = [...items].sort((a, b) => {
@@ -143,9 +144,17 @@ export function ItemTable({
 		setItemToDelete(null);
 	};
 
-	const handleStatusChange = (item: LostItemWithImages, newStatus: string) => {
+	const handleStatusChange = async (
+		item: LostItemWithImages,
+		newStatus: string,
+	) => {
 		if (onStatusChange) {
-			onStatusChange(item, newStatus as ItemStatus);
+			setUpdatingStatusId(item.id);
+			try {
+				await onStatusChange(item, newStatus as ItemStatus);
+			} finally {
+				setUpdatingStatusId(null);
+			}
 		}
 	};
 
@@ -360,8 +369,13 @@ export function ItemTable({
 												onValueChange={(value) =>
 													handleStatusChange(item, value)
 												}
+												disabled={updatingStatusId === item.id}
 											>
-												<SelectTrigger size="sm" className="w-[130px]">
+												<SelectTrigger
+													size="sm"
+													className="w-[130px]"
+													isLoading={updatingStatusId === item.id}
+												>
 													<SelectValue />
 												</SelectTrigger>
 												<SelectContent>
